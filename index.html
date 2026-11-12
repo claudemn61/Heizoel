@@ -85,6 +85,8 @@ p{margin:0 0 8px}
 .seg button[aria-pressed="true"]{background:var(--oil-soft);border-color:var(--oil);color:var(--oil-ink)}
 .chart{position:relative;width:100%;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .chart svg{display:block;overflow:visible}
+.chart svg *{pointer-events:none}
+.zoomreset{position:absolute;top:-40px;right:0;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;min-height:34px}
 .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:6px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
@@ -325,7 +327,7 @@ let TODAY = D.today();
 const rel = t => { const d = Math.round((t - TODAY) / DAY); if (d === 0) return 'heute'; if (d === 1) return 'morgen'; if (d === -1) return 'gestern'; return d > 0 ? 'in ' + d + ' Tagen' : 'vor ' + (-d) + ' Tagen'; };
 
 let state = { v:1, events:[], settings:Object.assign({}, DEFAULTS, {theme:'auto'}) };
-const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importData:null };
+const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importData:null, zoom:null };
 const LS_KEY = 'heizoel-tracker-v1';
 let dbDoc = null, storageMode = 'local', saveState = 'ok', A = null, deferredPrompt = null;
 
@@ -474,6 +476,7 @@ function renderHome(){
     <div class="chips" id="rangeChips"><button data-range="cycle" aria-pressed="${ui.range === 'cycle'}">Dieser Zyklus</button><button data-range="all" aria-pressed="${ui.range === 'all'}">Alles</button></div>
     <div class="chart" id="chartLevel"></div>
     <div class="legend"><span><b style="border-color:var(--ink)"></b>Verlauf</span><span><b style="border-color:var(--oil);border-top-style:dashed"></b>Prognose normal</span><span><b class="band" style="background:var(--cold)"></b>mild bis kalt</span><span><b style="border-color:var(--ok)"></b>mit Lieferung</span></div>
+    <p class="hint" style="margin-top:4px">Mit zwei Fingern horizontal zoomen und verschieben.</p>
     <h3 style="margin-top:16px">Lieferung planen</h3>
     <div class="row2"><label class="field"><span>Menge (l)</span><input id="plan-vol" inputmode="numeric" value="${ui.planVol != null ? ui.planVol : A.qtySafe}"></label>
     <label class="field"><span>Lieferdatum</span><input id="plan-date" type="date" value="${D.iso(P ? P.dt : defDt)}"></label></div>
@@ -653,8 +656,10 @@ function pathOf(series, X, Y, x1){
 }
 function setupTip(host, svg, m, W, H, x0, x1, tipFn){
   const tip = document.createElement('div'); tip.className = 'tip'; host.appendChild(tip);
-  const cur = svg.querySelector('#cursor');
+  const cursor = () => svg.querySelector('#cursor');
   const move = ev => {
+    if (svg._geo) ({m, W, x0, x1, tipFn} = svg._geo);
+    const cur = cursor();
     const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
     if (px < m.l || px > W - m.r){ tip.style.display = 'none'; if (cur) cur.setAttribute('opacity', 0); return; }
     const t = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0);
@@ -664,7 +669,7 @@ function setupTip(host, svg, m, W, H, x0, x1, tipFn){
     if (cur){ cur.setAttribute('x1', px); cur.setAttribute('x2', px); cur.setAttribute('opacity', .5); }
   };
   svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
-  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; if (cur) cur.setAttribute('opacity', 0); });
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; const cur = cursor(); if (cur) cur.setAttribute('opacity', 0); });
 }
 function histLevel(t){
   const pts = A.pts;
@@ -679,16 +684,60 @@ function histLevel(t){
   }
   return null;
 }
+/* Spreizgeste (zwei Finger) bzw. Trackpad-Pinch (Ctrl+Mausrad): horizontal zoomen und verschieben */
+const ZOOM_MIN = 21 * DAY;
+let pzRaf = 0;
+function setZoom(host, x0, span){
+  const v = host._view; span = Math.min(Math.max(span, ZOOM_MIN), v.bx1 - v.bx0);
+  x0 = Math.min(Math.max(x0, v.bx0), v.bx1 - span);
+  ui.zoom = span >= v.bx1 - v.bx0 - DAY ? null : {range:ui.range, x0, x1:x0 + span};
+  if (!pzRaf) pzRaf = requestAnimationFrame(() => { pzRaf = 0; drawLevel(); });
+}
+function setupPinch(host){
+  if (host._pz) return; host._pz = true;
+  let g = null;
+  const pw = () => host._view.W - host._view.m.l - host._view.m.r;
+  const info = e => { const [a, b] = e.touches, r = host.getBoundingClientRect(); return {d:Math.max(20, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)), mx:(a.clientX + b.clientX) / 2 - r.left}; };
+  host.addEventListener('touchstart', e => {
+    if (e.touches.length !== 2 || !host._view) return;
+    e.preventDefault();
+    const v = host._view, i = info(e);
+    g = {d:i.d, ta:v.x0 + (i.mx - v.m.l) / pw() * (v.x1 - v.x0), span:v.x1 - v.x0};
+  }, {passive:false});
+  host.addEventListener('touchmove', e => {
+    if (!g || e.touches.length !== 2) return;
+    e.preventDefault();
+    const v = host._view, i = info(e), span = g.span * g.d / i.d;
+    // Zeitpunkt unter dem Startmittelpunkt bleibt unter dem aktuellen Mittelpunkt (zoomen + verschieben)
+    setZoom(host, g.ta - (i.mx - v.m.l) / pw() * Math.min(Math.max(span, ZOOM_MIN), v.bx1 - v.bx0), span);
+  }, {passive:false});
+  host.addEventListener('touchend', e => { if (e.touches.length < 2) g = null; });
+  host.addEventListener('touchcancel', () => { g = null; });
+  host.addEventListener('gesturestart', e => e.preventDefault());
+  host.addEventListener('wheel', e => {
+    if (!e.ctrlKey || !host._view) return;
+    e.preventDefault();
+    const v = host._view, r = host.getBoundingClientRect(), mx = e.clientX - r.left;
+    const ta = v.x0 + (mx - v.m.l) / pw() * (v.x1 - v.x0), span = (v.x1 - v.x0) * Math.exp(e.deltaY * 0.01);
+    const sp = Math.min(Math.max(span, ZOOM_MIN), v.bx1 - v.bx0);
+    setZoom(host, ta - (mx - v.m.l) / pw() * sp, sp);
+  }, {passive:false});
+}
 function drawLevel(){
   const host = $('#chartLevel'); if (!host) return;
   const S = A.S, P = planOf(), W = Math.max(280, host.clientWidth), H = 270, m = {l:44, r:12, t:16, b:26};
   const lastFill = [...A.pts].reverse().find(p => p.kind === 'post');
-  const x0 = ui.range === 'all' ? A.pts[0].t : Math.min(lastFill ? lastFill.t - 10 * DAY : A.pts[0].t, TODAY - 100 * DAY);
+  const bx0 = ui.range === 'all' ? A.pts[0].t : Math.min(lastFill ? lastFill.t - 10 * DAY : A.pts[0].t, TODAY - 100 * DAY);
   const endNo = A.c.empty.mild || (TODAY + 300 * DAY);
-  const x1 = Math.max(TODAY + 150 * DAY, (P ? A.T + 25 * DAY : endNo + 20 * DAY));
-  let maxL = Math.max(...A.pts.filter(p => p.t >= x0).map(p => p.level), A.L0);
-  if (P) maxL = Math.max(maxL, ...P.normal.filter(p => p.t <= x1).map(p => p.level));
+  const bx1 = Math.max(TODAY + 150 * DAY, (P ? A.T + 25 * DAY : endNo + 20 * DAY));
+  let maxL = Math.max(...A.pts.filter(p => p.t >= bx0).map(p => p.level), A.L0);
+  if (P) maxL = Math.max(maxL, ...P.normal.filter(p => p.t <= bx1).map(p => p.level));
   const ymax = Math.min(Math.ceil(S.capacity / 1000) * 1000, Math.max(3000, Math.ceil(maxL / 1000) * 1000));
+  // Horizontaler Zoom (Spreizgeste): sichtbares Fenster innerhalb des Basisbereichs, y-Skala bleibt fix
+  let x0 = bx0, x1 = bx1;
+  const z = ui.zoom && ui.zoom.range === ui.range ? ui.zoom : null;
+  if (z){ x0 = Math.max(bx0, z.x0); x1 = Math.min(bx1, z.x1); if (x1 - x0 < ZOOM_MIN){ x0 = bx0; x1 = bx1; } }
+  const zoomed = x1 - x0 < bx1 - bx0 - DAY;
   const X = t => m.l + (t - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => m.t + (1 - Math.min(v, ymax) / ymax) * (H - m.t - m.b);
   // Beschriftung einer senkrechten Linie: rechts davon, am rechten Rand links davon (w = geschätzte Textbreite)
   const vlab = (x, w) => x + 4 + w > W - m.r ? `x="${x - 4}" text-anchor="end"` : `x="${x + 4}"`;
@@ -696,6 +745,7 @@ function drawLevel(){
   for (let v = 0; v <= ymax; v += 1000) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
   for (const t of timeTicks(x0, x1, W - m.l - m.r)) g += `<line x1="${X(t.t)}" x2="${X(t.t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t.t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${t.label}</text>`;
   const band = (a, b, col) => { const A1 = a.filter(p => p.t <= x1 + DAY), B1 = b.filter(p => p.t <= x1 + DAY); return `<path d="M${A1.map(p => X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1)).join('L')}L${B1.slice().reverse().map(p => X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1)).join('L')}Z" fill="${col}" opacity=".22"/>`; };
+  g += '<g clip-path="url(#clipL)">';
   g += band(A.mild, A.kalt, 'var(--cold)');
   g += `<path d="${pathOf(A.normal, X, Y, x1)}" fill="none" stroke="var(--oil)" stroke-width="2" stroke-dasharray="6 4"/>`;
   if (P){
@@ -703,6 +753,7 @@ function drawLevel(){
     g += `<path d="${pathOf(P.normal, X, Y, x1)}" fill="none" stroke="var(--ok)" stroke-width="2.4"/>`;
     g += `<line x1="${X(P.dt)}" x2="${X(P.dt)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"/><text ${vlab(X(P.dt), 46)} y="${m.t + 34}" font-size="10" fill="var(--ok)">Lieferung</text>`;
   }
+  g += '</g>';
   g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.thr)}" y2="${Y(S.thr)}" stroke="var(--bad)" stroke-width="1.2" stroke-dasharray="5 3"/><text x="${m.l + 4}" y="${Y(S.thr) - 4}" text-anchor="start" font-size="10" fill="var(--bad)">Schwelle ${fN(S.thr)} l</text>`;
   if (S.reserve !== S.thr) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.reserve)}" y2="${Y(S.reserve)}" stroke="var(--bad)" stroke-width="1" opacity=".5"/><text x="${m.l + 4}" y="${Y(S.reserve) + 12}" text-anchor="start" font-size="10" fill="var(--bad)" opacity=".8">Reserve ${fN(S.reserve)} l</text>`;
   let d = '';
@@ -710,19 +761,29 @@ function drawLevel(){
   g += `<g clip-path="url(#clipL)"><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
   A.pts.forEach(p => { if (p.kind === 'read') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="3" fill="var(--ink)"/>`; else if (p.kind === 'post') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="4" fill="var(--surface)" stroke="var(--oil)" stroke-width="2.4"/>`; });
   g += '</g>';
-  g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/><text ${vlab(X(TODAY), 26)} y="${m.t + 9}" font-size="10" fill="var(--ink)">heute</text>`;
+  if (TODAY >= x0 && TODAY <= x1) g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/><text ${vlab(X(TODAY), 26)} y="${m.t + 9}" font-size="10" fill="var(--ink)">heute</text>`;
   if (A.recommended != null && A.recommended > x0 && A.recommended < x1) g += `<line x1="${X(A.recommended)}" x2="${X(A.recommended)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--oil)" stroke-width="1.6"/><text ${vlab(X(A.recommended), 50)} y="${m.t + 21}" font-size="10" font-weight="600" fill="var(--oil-ink)">bestellen</text>`;
   g += `<line id="cursor" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" opacity="0"/>`;
-  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Füllstandsverlauf und Prognose"><defs><clipPath id="clipL"><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/></clipPath></defs>${g}</svg>`;
-  const svg = host.querySelector('svg');
-  setupTip(host, svg, m, W, H, x0, x1, t => {
+  // Das SVG-Element wird nur einmal erzeugt und danach nur sein Inhalt ersetzt: würde es während
+  // der Spreizgeste ausgetauscht, kämen die weiteren Touch-Ereignisse nicht mehr an.
+  let svg = host.querySelector('svg.lvl'), fresh = false;
+  if (!svg){ host.innerHTML = '<svg class="lvl" role="img" aria-label="Füllstandsverlauf und Prognose"></svg>'; svg = host.querySelector('svg.lvl'); fresh = true; }
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = `<defs><clipPath id="clipL"><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/></clipPath></defs>${g}`;
+  let rb = host.querySelector('.zoomreset');
+  if (zoomed && !rb) host.insertAdjacentHTML('beforeend', '<button class="zoomreset" data-act="zoomReset">Ganze Ansicht</button>');
+  else if (!zoomed && rb) rb.remove();
+  host._view = {x0, x1, bx0, bx1, W, m};
+  setupPinch(host);
+  svg._geo = {m, W, x0, x1, tipFn: t => {
     const d0 = fD(Math.round(t / DAY) * DAY);
     if (t <= A.t0){ const l = histLevel(t); return l == null ? null : `${d0}<br><b>${fN(l)} l</b> Verlauf`; }
     const n = levelAt(A.normal, t), mi = levelAt(A.mild, t), ka = levelAt(A.kalt, t);
     let s = `${d0}<br>Prognose <b>${fN(n)} l</b><br><span style="opacity:.8">kalt ${fN(ka)} · mild ${fN(mi)}</span>`;
     if (P && t >= P.dt) s += `<br>Mit Lieferung <b>${fN(levelAt(P.normal, t))} l</b>`;
     return s;
-  });
+  }};
+  if (fresh) setupTip(host, svg, m, W, H, x0, x1, svg._geo.tipFn);
 }
 function drawRate(){
   const host = $('#chartRate'); if (!host) return;
@@ -908,6 +969,8 @@ async function onAct(act){
   } else if (act === 'import'){
     if (!ui.importData) return;
     state = normalize(ui.importData); saveLocal(); pushDb(); setBackup(false); ui.importData = null; ui.planVol = null; ui.planDate = null; toast('Backup importiert'); render();
+  } else if (act === 'zoomReset'){
+    ui.zoom = null; drawLevel();
   } else if (act === 'importCancel'){
     ui.importData = null; render();
   } else if (act === 'reset'){
@@ -922,7 +985,7 @@ document.addEventListener('click', ev => {
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
   if (t.dataset.mode){ ui.addMode = t.dataset.mode; ui.confirmKey = null; return render(); }
-  if (t.dataset.range){ ui.range = t.dataset.range; $$('#rangeChips button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === ui.range)); return drawLevel(); }
+  if (t.dataset.range){ ui.range = t.dataset.range; ui.zoom = null; $$('#rangeChips button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === ui.range)); return drawLevel(); }
   if (t.dataset.act) return onAct(t.dataset.act);
   if (t.id === 'addSave') return onAddSave();
   if (t.id === 'xSave') return onSheetSave();

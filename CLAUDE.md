@@ -50,6 +50,11 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
 | 2. UI (IIFE) | Speicher, `render()`, Tabs `home`/`add`/`log`/`analysis`/`more`, SVG-Diagramme, Sheet, Aktionen |
 | 3. Start | Service-Worker-Registrierung, `navigator.storage.persist()` |
 
+Diagramm «Füllstand und Prognose» ist mit der Spreizgeste horizontal zoombar
+(`setupPinch`, Zustand `ui.zoom`). Dafür bleibt dessen `<svg>`-Element bestehen
+und nur der Inhalt wird neu gezeichnet — nicht wieder auf `host.innerHTML`
+umbauen, sonst kommen die Touch-Ereignisse während der Geste nicht mehr an.
+
 Weitere Dateien: `sw.js` (Service Worker), `manifest.webmanifest`,
 `icon-180.png`, `icon-192.png`, `icon-512.png`.
 
