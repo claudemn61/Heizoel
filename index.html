@@ -615,11 +615,12 @@ function renderLog(){
 /* ---- Analyse ---- */
 const DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function cyclesTable(){
-  const runs = buildRuns(A.pts).filter(r => r.length >= 2);
+  // Alle Zyklen; der letzte läuft noch und wird auch ohne Folgemessung angezeigt (z. B. Lieferung von heute)
+  const runs = buildRuns(A.pts);
   const rows = runs.map((r, i) => {
     const s = r[0], e = r[r.length - 1], days = (e.t - s.t) / DAY, lit = s.level - e.level;
-    if (days <= 0) return '';
     const ongoing = i === runs.length - 1;
+    if (days <= 0) return ongoing ? `<tr><td>${fDs(s.t)} (läuft)</td><td>0</td><td>–</td><td>–</td><td>–</td></tr>` : '';
     const yr = days >= 330 ? fN(lit / days * 365) : '–';
     return `<tr><td>${fDs(s.t)}${ongoing ? ' (läuft)' : ''}</td><td>${Math.round(days)}</td><td>${fN(lit)}</td><td>${f1(lit / days)}</td><td>${yr}</td></tr>`;
   }).reverse().join('');
