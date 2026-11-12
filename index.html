@@ -673,6 +673,8 @@ function drawLevel(){
   if (P) maxL = Math.max(maxL, ...P.normal.filter(p => p.t <= x1).map(p => p.level));
   const ymax = Math.min(Math.ceil(S.capacity / 1000) * 1000, Math.max(3000, Math.ceil(maxL / 1000) * 1000));
   const X = t => m.l + (t - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => m.t + (1 - Math.min(v, ymax) / ymax) * (H - m.t - m.b);
+  // Beschriftung einer senkrechten Linie: rechts davon, am rechten Rand links davon (w = geschätzte Textbreite)
+  const vlab = (x, w) => x + 4 + w > W - m.r ? `x="${x - 4}" text-anchor="end"` : `x="${x + 4}"`;
   let g = '';
   for (let v = 0; v <= ymax; v += 1000) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
   for (const t of timeTicks(x0, x1, W - m.l - m.r)) g += `<line x1="${X(t.t)}" x2="${X(t.t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t.t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${t.label}</text>`;
@@ -682,7 +684,7 @@ function drawLevel(){
   if (P){
     g += band(P.mild, P.kalt, 'var(--ok)');
     g += `<path d="${pathOf(P.normal, X, Y, x1)}" fill="none" stroke="var(--ok)" stroke-width="2.4"/>`;
-    g += `<line x1="${X(P.dt)}" x2="${X(P.dt)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${X(P.dt) + 4}" y="${m.t + 34}" font-size="10" fill="var(--ok)">Lieferung</text>`;
+    g += `<line x1="${X(P.dt)}" x2="${X(P.dt)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"/><text ${vlab(X(P.dt), 46)} y="${m.t + 34}" font-size="10" fill="var(--ok)">Lieferung</text>`;
   }
   g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.thr)}" y2="${Y(S.thr)}" stroke="var(--bad)" stroke-width="1.2" stroke-dasharray="5 3"/><text x="${m.l + 4}" y="${Y(S.thr) - 4}" text-anchor="start" font-size="10" fill="var(--bad)">Schwelle ${fN(S.thr)} l</text>`;
   if (S.reserve !== S.thr) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.reserve)}" y2="${Y(S.reserve)}" stroke="var(--bad)" stroke-width="1" opacity=".5"/><text x="${m.l + 4}" y="${Y(S.reserve) + 12}" text-anchor="start" font-size="10" fill="var(--bad)" opacity=".8">Reserve ${fN(S.reserve)} l</text>`;
@@ -691,8 +693,8 @@ function drawLevel(){
   g += `<g clip-path="url(#clipL)"><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
   A.pts.forEach(p => { if (p.kind === 'read') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="3" fill="var(--ink)"/>`; else if (p.kind === 'post') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="4" fill="var(--surface)" stroke="var(--oil)" stroke-width="2.4"/>`; });
   g += '</g>';
-  g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/><text x="${X(TODAY) + 4}" y="${m.t + 9}" font-size="10" fill="var(--ink)">heute</text>`;
-  if (A.recommended != null && A.recommended > x0 && A.recommended < x1) g += `<line x1="${X(A.recommended)}" x2="${X(A.recommended)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--oil)" stroke-width="1.6"/><text x="${X(A.recommended) + 4}" y="${m.t + 21}" font-size="10" font-weight="600" fill="var(--oil-ink)">bestellen</text>`;
+  g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/><text ${vlab(X(TODAY), 26)} y="${m.t + 9}" font-size="10" fill="var(--ink)">heute</text>`;
+  if (A.recommended != null && A.recommended > x0 && A.recommended < x1) g += `<line x1="${X(A.recommended)}" x2="${X(A.recommended)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--oil)" stroke-width="1.6"/><text ${vlab(X(A.recommended), 50)} y="${m.t + 21}" font-size="10" font-weight="600" fill="var(--oil-ink)">bestellen</text>`;
   g += `<line id="cursor" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" opacity="0"/>`;
   host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Füllstandsverlauf und Prognose"><defs><clipPath id="clipL"><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/></clipPath></defs>${g}</svg>`;
   const svg = host.querySelector('svg');
