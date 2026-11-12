@@ -323,7 +323,7 @@ let TODAY = D.today();
 const rel = t => { const d = Math.round((t - TODAY) / DAY); if (d === 0) return 'heute'; if (d === 1) return 'morgen'; if (d === -1) return 'gestern'; return d > 0 ? 'in ' + d + ' Tagen' : 'vor ' + (-d) + ' Tagen'; };
 
 let state = { v:1, events:[], settings:Object.assign({}, DEFAULTS, {theme:'auto'}) };
-const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importArm:false };
+const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importData:null };
 const LS_KEY = 'heizoel-tracker-v1';
 let dbDoc = null, storageMode = 'local', saveState = 'ok', A = null, deferredPrompt = null;
 
@@ -759,7 +759,9 @@ function updatePlanText(){
 function renderMore(){
   const S = state.settings, [em, ed] = S.seasonEnd.split('-').map(Number);
   const num_ = (k, label, hint, unit) => `<label class="field"><span>${label}</span><input data-s="${k}" inputmode="decimal" value="${S[k]}">${hint ? `<small>${hint}</small>` : ''}</label>`;
-  const json = JSON.stringify({v:1, events:state.events, settings:S}, null, 1);
+  const imp = ui.importData, impLast = imp && imp.events.length ? imp.events.map(e => e.date).sort().pop() : null;
+  const pending = imp ? `<div class="preview warn" style="margin-top:10px">Datei mit <b>${imp.events.length} Einträgen</b> geladen${impLast ? ', letzter vom ' + fD(D.parse(impLast)) : ''}. Beim Übernehmen werden alle vorhandenen Einträge und Einstellungen ersetzt.</div>
+    <div class="btns"><button class="btn oil sm" data-act="import">Übernehmen</button><button class="btn ghost sm" data-act="importCancel">Abbrechen</button></div>` : '';
   const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
   const install = (!window.claude && !standalone) ? `<section class="card"><h3>Als App installieren</h3><p class="small muted">iPhone: In Safari auf das Teilen-Symbol tippen, dann «Zum Home-Bildschirm». Android: Browsermenü, dann «App installieren». Danach läuft die App im Vollbild und auch ohne Internet.</p>${deferredPrompt ? '<div class="btns"><button class="btn oil sm" data-act="install">Jetzt installieren</button></div>' : ''}</section>` : '';
   const where = storageMode === 'db' ? 'in deinem Claude-Konto und sind auf allen Geräten verfügbar' : (!window.claude ? 'auf diesem Gerät im Speicher der App. Sichere sie regelmässig, denn beim Löschen der App-Daten gehen sie verloren' : 'nur in diesem Browser. Öffne die App eingeloggt in Claude, damit sie im Konto gespeichert werden');
@@ -780,12 +782,9 @@ function renderMore(){
     <div class="btns"><button class="btn ghost sm" data-act="resetProfile">Standardprofil laden</button></div></details>
     <label class="field"><span>Darstellung</span><select data-s="theme"><option value="auto" ${S.theme === 'auto' ? 'selected' : ''}>Automatisch</option><option value="light" ${S.theme === 'light' ? 'selected' : ''}>Hell</option><option value="dark" ${S.theme === 'dark' ? 'selected' : ''}>Dunkel</option></select></label>
   </section>
-  ${install}<section class="card"><h3>Sicherung</h3><p class="small muted">Deine Daten liegen ${where}. Eine Kopie als Text kannst du hier sichern.</p>
-    <textarea id="exp" readonly>${esc(json)}</textarea>
-    <div class="btns"><button class="btn ghost sm" data-act="copy">Kopieren</button><button class="btn ghost sm" data-act="download">Als Datei speichern</button></div>
-    <h3 style="margin-top:16px">Daten importieren</h3><textarea id="imp" placeholder="Gesicherten Text hier einfügen"></textarea>
-    <div class="btns"><button class="btn ghost sm" data-act="import">${ui.importArm ? 'Wirklich ersetzen' : 'Importieren'}</button></div>
-    <p class="hint" style="margin-top:6px">Der Import ersetzt alle vorhandenen Einträge.</p></section>
+  ${install}<section class="card"><h3>Sicherung</h3><p class="small muted">Deine Daten liegen ${where}. Die Sicherungsdatei z. B. in «Dateien» oder iCloud Drive ablegen.</p>
+    <div class="btns"><button class="btn ghost sm" data-act="download">Als Datei speichern</button><button class="btn ghost sm" data-act="pick">Datei laden</button></div>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>${pending || '<p class="hint" style="margin-top:6px">Das Laden ersetzt alle vorhandenen Einträge.</p>'}</section>
   <section class="card"><h3>Alle Daten löschen</h3><p class="small muted">Entfernt alle Einträge und Einstellungen.</p>
     <div class="btns"><button class="btn ${ui.resetArm ? 'bad' : 'ghost'} sm" data-act="reset">${ui.resetArm ? 'Ja, alles löschen' : 'Daten löschen'}</button></div></section>`;
 }
@@ -819,7 +818,7 @@ function render(){
   renderChip();
   requestAnimationFrame(drawCharts);
 }
-function go(tab){ ui.tab = tab; ui.resetArm = false; ui.importArm = false; render(); window.scrollTo(0, 0); }
+function go(tab){ ui.tab = tab; ui.resetArm = false; ui.importData = null; render(); window.scrollTo(0, 0); }
 
 /* ---- Aktionen ---- */
 function onAddSave(){
@@ -858,23 +857,22 @@ function onSetting(t){
   persist(); ui.planVol = null; ui.planDate = null; render();
 }
 async function onAct(act){
-  if (act === 'copy'){
-    const ta = $('#exp');
-    try { await navigator.clipboard.writeText(ta.value); toast('Kopiert'); }
-    catch(e){ ta.select(); try { document.execCommand('copy'); toast('Kopiert'); } catch(e2){ toast('Bitte den Text markieren und kopieren.'); } }
-  } else if (act === 'download'){
+  if (act === 'download'){
+    const data = JSON.stringify({v:1, events:state.events, settings:state.settings}, null, 1), fname = 'heizoel-daten-' + D.iso(TODAY) + '.json';
     try {
       const dl = window.claude && claude.use ? await claude.use('downloads') : null;
-      if (dl){ await dl.save({filename:'heizoel-daten.json', data:$('#exp').value}); toast('Datei gespeichert'); }
-      else { const url = URL.createObjectURL(new Blob([$('#exp').value], {type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = 'heizoel-daten.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Datei wird gespeichert'); }
-    } catch(e){ toast('Speichern abgebrochen. Bitte kopieren.'); }
+      if (dl){ await dl.save({filename:fname, data}); toast('Datei gespeichert'); }
+      else { const url = URL.createObjectURL(new Blob([data], {type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Datei wird gespeichert'); }
+    } catch(e){ toast('Speichern abgebrochen.'); }
   } else if (act === 'install'){
     if (deferredPrompt){ deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch(e){} deferredPrompt = null; render(); }
+  } else if (act === 'pick'){
+    const f = $('#impFile'); f.value = ''; f.click();
   } else if (act === 'import'){
-    let d; try { d = JSON.parse($('#imp').value); } catch(e){ toast('Der Text ist kein gültiges Backup.'); return; }
-    if (!d || !Array.isArray(d.events)){ toast('Im Backup fehlen die Einträge.'); return; }
-    if (!ui.importArm){ ui.importArm = true; $('[data-act="import"]').textContent = 'Wirklich ersetzen'; toast(d.events.length + ' Einträge gefunden. Nochmals tippen zum Ersetzen.'); return; }
-    state = normalize(d); persist(); ui.importArm = false; ui.planVol = null; ui.planDate = null; toast('Daten importiert'); render();
+    if (!ui.importData) return;
+    state = normalize(ui.importData); persist(); ui.importData = null; ui.planVol = null; ui.planDate = null; toast('Daten übernommen'); render();
+  } else if (act === 'importCancel'){
+    ui.importData = null; render();
   } else if (act === 'reset'){
     if (!ui.resetArm){ ui.resetArm = true; render(); return; }
     state = normalize({events:[], settings:{}}); persist(); ui.resetArm = false; ui.planVol = null; ui.planDate = null; toast('Alle Daten gelöscht'); render();
@@ -901,7 +899,17 @@ $('#main').addEventListener('input', e => {
   if (t.id === 'plan-vol'){ const v = num(t.value); ui.planVol = v == null ? 0 : Math.max(0, Math.round(v)); drawLevel(); updatePlanText(); }
   else if (t.id === 'plan-date'){ ui.planDate = t.value || null; drawLevel(); updatePlanText(); }
 });
-$('#main').addEventListener('change', e => { if (e.target.closest('#settings')) onSetting(e.target); });
+$('#main').addEventListener('change', e => {
+  if (e.target.id === 'impFile') return onFile(e.target.files && e.target.files[0]);
+  if (e.target.closest('#settings')) onSetting(e.target);
+});
+/* Sicherungsdatei lesen und zur Bestätigung anzeigen */
+async function onFile(file){
+  if (!file) return;
+  let d; try { d = JSON.parse(await file.text()); } catch(e){ toast('Die Datei ist keine gültige Sicherung.'); return; }
+  if (!d || !Array.isArray(d.events)){ toast('In der Datei fehlen die Einträge.'); return; }
+  ui.importData = d; render();
+}
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (ui.tab === 'more') render(); });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawCharts, 150); });
 
