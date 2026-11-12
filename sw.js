@@ -1,5 +1,5 @@
 // Cache-Version: bei jeder ausgelieferten Änderung erhöhen
-const VER = 'heizoel-v2';
+const VER = 'heizoel-v3';
 const FONTS = 'heizoel-fonts';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {

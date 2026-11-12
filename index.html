@@ -482,7 +482,7 @@ function renderHome(){
     <div class="chips" id="rangeChips"><button data-range="cycle" aria-pressed="${ui.range === 'cycle'}">Dieser Zyklus</button><button data-range="all" aria-pressed="${ui.range === 'all'}">Alles</button></div>
     <div class="chart" id="chartLevel"></div>
     <div class="legend"><span><b style="border-color:var(--ink)"></b>Verlauf</span><span><b style="border-color:var(--oil);border-top-style:dashed"></b>Prognose normal</span><span><b class="band" style="background:var(--cold)"></b>mild bis kalt</span><span><b style="border-color:var(--ok)"></b>mit Lieferung</span></div>
-    <p class="hint" style="margin-top:4px">Mit zwei Fingern horizontal zoomen und verschieben.</p>
+    <p class="hint" style="margin-top:4px">Mit zwei Fingern zoomen, mit einem Finger verschieben.</p>
     <h3 style="margin-top:16px">Lieferung planen</h3>
     <div class="row2"><label class="field"><span>Menge (l)</span><input id="plan-vol" inputmode="numeric" value="${ui.planVol != null ? ui.planVol : A.qtySafe}"></label>
     <label class="field"><span>Lieferdatum</span><input id="plan-date" type="date" value="${D.iso(P ? P.dt : defDt)}"></label></div>
@@ -664,6 +664,7 @@ function setupTip(host, svg, m, W, H, x0, x1, tipFn){
   const tip = document.createElement('div'); tip.className = 'tip'; host.appendChild(tip);
   const cursor = () => svg.querySelector('#cursor');
   const move = ev => {
+    if (host._panning){ tip.style.display = 'none'; const c = cursor(); if (c) c.setAttribute('opacity', 0); return; }
     if (svg._geo) ({m, W, x0, x1, tipFn} = svg._geo);
     const cur = cursor();
     const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
@@ -704,21 +705,41 @@ function setupPinch(host){
   let g = null;
   const pw = () => host._view.W - host._view.m.l - host._view.m.r;
   const info = e => { const [a, b] = e.touches, r = host.getBoundingClientRect(); return {d:Math.max(20, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)), mx:(a.clientX + b.clientX) / 2 - r.left}; };
+  let pan = null;   // Ein-Finger-Verschieben (nur wenn gezoomt): {x, y, x0, span, on}
   host.addEventListener('touchstart', e => {
-    if (e.touches.length !== 2 || !host._view) return;
+    if (!host._view) return;
+    if (e.touches.length === 1){
+      const v = host._view, t = e.touches[0];
+      pan = ui.zoom ? {x:t.clientX, y:t.clientY, x0:v.x0, span:v.x1 - v.x0, on:false} : null;
+      return;
+    }
+    if (e.touches.length !== 2) return;
     e.preventDefault();
+    pan = null; host._panning = false;
     const v = host._view, i = info(e);
     g = {d:i.d, ta:v.x0 + (i.mx - v.m.l) / pw() * (v.x1 - v.x0), span:v.x1 - v.x0};
   }, {passive:false});
   host.addEventListener('touchmove', e => {
+    if (pan && e.touches.length === 1){
+      const t = e.touches[0], dx = t.clientX - pan.x, dy = t.clientY - pan.y;
+      if (!pan.on){
+        // Richtung entscheiden: waagrecht = verschieben, senkrecht = Seite scrollen
+        if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)){ pan = null; return; }
+        if (Math.abs(dx) < 8) return;
+        pan.on = true; host._panning = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      setZoom(host, pan.x0 - dx / pw() * pan.span, pan.span);
+      return;
+    }
     if (!g || e.touches.length !== 2) return;
     e.preventDefault();
     const v = host._view, i = info(e), span = g.span * g.d / i.d;
     // Zeitpunkt unter dem Startmittelpunkt bleibt unter dem aktuellen Mittelpunkt (zoomen + verschieben)
     setZoom(host, g.ta - (i.mx - v.m.l) / pw() * Math.min(Math.max(span, ZOOM_MIN), v.bx1 - v.bx0), span);
   }, {passive:false});
-  host.addEventListener('touchend', e => { if (e.touches.length < 2) g = null; });
-  host.addEventListener('touchcancel', () => { g = null; });
+  host.addEventListener('touchend', e => { if (e.touches.length < 2) g = null; if (!e.touches.length){ pan = null; host._panning = false; } });
+  host.addEventListener('touchcancel', () => { g = null; pan = null; host._panning = false; });
   host.addEventListener('gesturestart', e => e.preventDefault());
   host.addEventListener('wheel', e => {
     if (!e.ctrlKey || !host._view) return;

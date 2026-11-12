@@ -52,7 +52,7 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
 | 3. Start | Service-Worker-Registrierung, `navigator.storage.persist()` |
 
 Diagramm «Füllstand und Prognose» ist mit der Spreizgeste horizontal zoombar
-(`setupPinch`, Zustand `ui.zoom`). Dafür bleibt dessen `<svg>`-Element bestehen
+(`setupPinch`, Zustand `ui.zoom`; zwei Finger zoomen, ein Finger verschiebt waagrecht, solange gezoomt). Dafür bleibt dessen `<svg>`-Element bestehen
 und nur der Inhalt wird neu gezeichnet — nicht wieder auf `host.innerHTML`
 umbauen, sonst kommen die Touch-Ereignisse während der Geste nicht mehr an.
 
