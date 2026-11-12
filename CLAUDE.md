@@ -29,18 +29,26 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
   `before`, `vol`, `after`). `normalize()` ist die einzige Stelle, die
   geladene/importierte Daten bereinigt — neue Felder dort ergänzen, sonst gehen
   sie beim Laden/Import verloren.
-- Backup: Export/Import als JSON-Text im Tab «Mehr» (`onAct`: `copy`,
-  `download`, `import`). Neue Einstellungen gehören in `DEFAULTS`, damit sie
-  automatisch im Backup landen.
+- Backup (analog Flugbuch), Tab «Mehr»: «Backup sichern» (`onAct('download')`)
+  schreibt `{v, exportedAt, events, settings}` gzip-komprimiert als
+  `heizoel-backup-JJJJ-MM-TT.json.gz`, bevorzugt über das Teilen-Menü (iOS «In
+  Dateien sichern»), sonst als Download. «Backup importieren» (`onFile`) liest
+  `.json.gz` und unkomprimiertes `.json` (Erkennung über gzip-Magic-Bytes) und
+  ersetzt die Daten erst nach «Übernehmen». Neue Einstellungen gehören in
+  `DEFAULTS`, damit sie automatisch im Backup landen.
+- Backup-Status (nicht Teil des Backups): `heizoel-lastBackupAt` (Anzeige im
+  Kopf) und `heizoel-backupDirty` (Punkt an «Mehr» und «Backup sichern»).
+  `persist()` setzt «geändert», Sichern und Import setzen es zurück.
+- Es gibt **keine vorgeladenen Daten** mehr im Code: eine neue Installation
+  startet leer und wird per «Backup importieren» befüllt.
 
 ## Aufbau `index.html`
 
 | Script-Block | Inhalt |
 |---|---|
 | 1. Kernlogik (ohne DOM, testbar) | `PRIOR`, `DEFAULTS`, `buildPoints/Intervals/Segments`, `fitK`, `simulate`, `analyze` |
-| 2. Seed | `window.HEIZOEL_SEED` — echte Startdaten, nur geladen wenn `localStorage` leer |
-| 3. UI (IIFE) | Speicher, `render()`, Tabs `home`/`add`/`log`/`analysis`/`more`, SVG-Diagramme, Sheet, Aktionen |
-| 4. Start | Service-Worker-Registrierung, `navigator.storage.persist()` |
+| 2. UI (IIFE) | Speicher, `render()`, Tabs `home`/`add`/`log`/`analysis`/`more`, SVG-Diagramme, Sheet, Aktionen |
+| 3. Start | Service-Worker-Registrierung, `navigator.storage.persist()` |
 
 Weitere Dateien: `sw.js` (Service Worker), `manifest.webmanifest`,
 `icon-180.png`, `icon-192.png`, `icon-512.png`.
@@ -72,7 +80,7 @@ Weitere Dateien: `sw.js` (Service Worker), `manifest.webmanifest`,
   Script-Blöcke extrahieren und z.B. mit `node --check` verifizieren, bevor
   etwas ausgeliefert wird.
 - Bei Berechnungen (Verbrauch, Prognose, Bestelltermin): mit den echten Daten
-  aus `HEIZOEL_SEED` bzw. einem Backup-Export testen, nicht nur mit erfundenen
+  aus einem Backup-Export testen, nicht nur mit erfundenen
   Beispieldaten. Die Kernlogik (Block 1) läuft ohne DOM und lässt sich direkt
   in Node ausführen.
 - **Konsistenz über Tabs hinweg** ist mir wichtig — wenn ich "identisch auch für

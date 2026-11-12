@@ -51,6 +51,10 @@ p{margin:0 0 8px}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface);white-space:nowrap}
 .chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
 .chip.err i{background:var(--bad)} .chip.loc i{background:var(--warn)}
+.top .meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.bak{font-size:11px;color:var(--muted);white-space:nowrap}
+.dot{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 2px var(--surface)}
+.btn .dot{top:-3px;right:-3px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
 .card.flat{background:transparent;border-style:dashed}
 .hero{display:grid;grid-template-columns:104px 1fr;gap:16px;align-items:center;padding:18px 16px}
@@ -117,7 +121,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,monospace}
 .scroll{overflow-x:auto}
 .bottom{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:30;padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px))}
 .bottom nav{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
-.bottom button{font:inherit;font-size:11px;font-weight:600;color:var(--muted);background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;cursor:pointer;min-height:48px}
+.bottom button{position:relative;font:inherit;font-size:11px;font-weight:600;color:var(--muted);background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;cursor:pointer;min-height:48px}
 .bottom button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bottom button[aria-current="page"]{color:var(--ink)}
 .bottom button[aria-current="page"] svg{stroke:var(--oil);stroke-width:2.2}
@@ -138,7 +142,7 @@ summary{cursor:pointer;font-weight:600}
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><div><h1>Heizöltank</h1><div class="sub">Füllstand, Verbrauch und Bestelltermin</div></div><span id="chip" class="chip loc"><i></i>Nur in diesem Browser</span></header>
+  <header class="top"><div><h1>Heizöltank</h1><div class="sub">Füllstand, Verbrauch und Bestelltermin</div></div><div class="meta"><span id="chip" class="chip loc"><i></i>Nur in diesem Browser</span><span id="bak" class="bak"></span></div></header>
   <main id="main"></main>
 </div>
 <div class="bottom"><nav aria-label="Hauptnavigation">
@@ -304,8 +308,6 @@ function analyze(events, settings, today){
           qtyMin: up(needN), qtySafe: up(needK), horizon};
 }
 </script><script>
-window.HEIZOEL_SEED={"v":1,"events":[{"id":"h20000906f","type":"fill","date":"2000-09-06","before":null,"after":3101,"vol":3101},{"id":"h20010113f","type":"fill","date":"2001-01-13","before":1000,"after":2891,"vol":1891},{"id":"h20011004f","type":"fill","date":"2001-10-04","before":1500,"after":3502,"vol":2002},{"id":"h20020607f","type":"fill","date":"2002-06-07","before":2700,"after":5700,"vol":3000},{"id":"h20030814f","type":"fill","date":"2003-08-14","before":2700,"after":5703,"vol":3003},{"id":"h20050202f","type":"fill","date":"2005-02-02","before":1500,"after":3539,"vol":2039},{"id":"h20060126f","type":"fill","date":"2006-01-26","before":700,"after":3812,"vol":3112},{"id":"h20061010f","type":"fill","date":"2006-10-10","before":2500,"after":5796,"vol":3296},{"id":"h20080917f","type":"fill","date":"2008-09-17","before":1800,"after":3855,"vol":2055},{"id":"h20090109f","type":"fill","date":"2009-01-09","before":2400,"after":5750,"vol":3350},{"id":"h20101208f","type":"fill","date":"2010-12-08","before":1500,"after":4550,"vol":3050},{"id":"h20120124f","type":"fill","date":"2012-01-24","before":1500,"after":3500,"vol":2000},{"id":"h20121231f","type":"fill","date":"2012-12-31","before":1000,"after":2500,"vol":1500},{"id":"h20130626f","type":"fill","date":"2013-06-26","before":600,"after":2601,"vol":2001},{"id":"h20140109f","type":"fill","date":"2014-01-09","before":1400,"after":4400,"vol":3000},{"id":"h20150224f","type":"fill","date":"2015-02-24","before":2000,"after":5970,"vol":3970},{"id":"h20161227f","type":"fill","date":"2016-12-27","before":1300,"after":5800,"vol":4500},{"id":"h20180307f","type":"fill","date":"2018-03-07","before":1600,"after":5888,"vol":4288},{"id":"h20200220f","type":"fill","date":"2020-02-20","before":1200,"after":5204,"vol":4004},{"id":"h20210928f","type":"fill","date":"2021-09-28","before":2100,"after":5803,"vol":3703},{"id":"h20220509r","type":"read","date":"2022-05-09","level":2600},{"id":"h20220515r","type":"read","date":"2022-05-15","level":2550},{"id":"h20220711r","type":"read","date":"2022-07-11","level":2500},{"id":"h20220805f","type":"fill","date":"2022-08-05","before":2400,"after":5860,"vol":3460},{"id":"h20230807r","type":"read","date":"2023-08-07","level":3100},{"id":"h20231019r","type":"read","date":"2023-10-19","level":3050},{"id":"h20231228r","type":"read","date":"2023-12-28","level":2000},{"id":"h20240113r","type":"read","date":"2024-01-13","level":1720},{"id":"h20240130f","type":"fill","date":"2024-01-30","before":1200,"after":5211,"vol":4011},{"id":"h20240229r","type":"read","date":"2024-02-29","level":5000},{"id":"h20240331r","type":"read","date":"2024-03-31","level":4800},{"id":"h20250531r","type":"read","date":"2025-05-31","level":700},{"id":"h20250707f","type":"fill","date":"2025-07-07","before":700,"after":5275,"vol":4575},{"id":"h20250831r","type":"read","date":"2025-08-31","level":5158},{"id":"h20260215r","type":"read","date":"2026-02-15","level":4050},{"id":"h20260322r","type":"read","date":"2026-03-22","level":2920},{"id":"h20260903r","type":"read","date":"2026-09-03","level":2220},{"id":"h20261019r","type":"read","date":"2026-10-19","level":1950},{"id":"h20261107r","type":"read","date":"2026-11-07","level":1700},{"id":"h20261112f","type":"fill","date":"2026-11-12","before":1700,"after":3852,"vol":2152}],"settings":{"theme":"auto"}};
-</script><script>
 /* ===== UI: Zustand, Speicher, Hilfsfunktionen ===== */
 (function(){
 'use strict';
@@ -347,7 +349,22 @@ function pushDb(){
     renderChip();
   }, 350);
 }
-function persist(){ saveLocal(); pushDb(); }
+function persist(){ saveLocal(); pushDb(); setBackup(true); }
+/* Backup-Status (bewusst nicht Teil des Backups): Zeitpunkt der letzten Sicherung und
+   «geändert seit letzter Sicherung» — wie in Flugbuch (settings:lastBackupAt/backupDirty) */
+const BAK_AT = 'heizoel-lastBackupAt', BAK_DIRTY = 'heizoel-backupDirty';
+const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
+function setBackup(dirty){
+  if (!dirty) lsSet(BAK_AT, new Date().toISOString());
+  lsSet(BAK_DIRTY, dirty ? '1' : '0');
+  renderBackupInfo();
+}
+function renderBackupInfo(){
+  const at = lsGet(BAK_AT), dirty = lsGet(BAK_DIRTY) === '1', el = $('#bak');
+  if (el){ if (at){ const d = new Date(at); el.textContent = 'Backup ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + String(d.getFullYear()).slice(2) + ' · ' + d.getHours() + ':' + pad(d.getMinutes()); } else el.textContent = 'Noch kein Backup'; }
+  $$('[data-tab="more"], [data-act="download"]').forEach(b => { const has = b.querySelector('.dot'); if (dirty && !has){ const i = document.createElement('i'); i.className = 'dot'; b.appendChild(i); } else if (!dirty && has) has.remove(); });
+}
 async function initDb(){
   try {
     if (!window.claude || !window.claude.use) return;
@@ -760,7 +777,7 @@ function renderMore(){
   const S = state.settings, [em, ed] = S.seasonEnd.split('-').map(Number);
   const num_ = (k, label, hint, unit) => `<label class="field"><span>${label}</span><input data-s="${k}" inputmode="decimal" value="${S[k]}">${hint ? `<small>${hint}</small>` : ''}</label>`;
   const imp = ui.importData, impLast = imp && imp.events.length ? imp.events.map(e => e.date).sort().pop() : null;
-  const pending = imp ? `<div class="preview warn" style="margin-top:10px">Datei mit <b>${imp.events.length} Einträgen</b> geladen${impLast ? ', letzter vom ' + fD(D.parse(impLast)) : ''}. Beim Übernehmen werden alle vorhandenen Einträge und Einstellungen ersetzt.</div>
+  const pending = imp ? `<div class="preview warn" style="margin-top:10px"><b>${imp.events.length} Einträge</b> im Backup${impLast ? ', letzter vom ' + fD(D.parse(impLast)) : ''}. Beim Übernehmen werden alle vorhandenen Einträge und Einstellungen ersetzt.</div>
     <div class="btns"><button class="btn oil sm" data-act="import">Übernehmen</button><button class="btn ghost sm" data-act="importCancel">Abbrechen</button></div>` : '';
   const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
   const install = (!window.claude && !standalone) ? `<section class="card"><h3>Als App installieren</h3><p class="small muted">iPhone: In Safari auf das Teilen-Symbol tippen, dann «Zum Home-Bildschirm». Android: Browsermenü, dann «App installieren». Danach läuft die App im Vollbild und auch ohne Internet.</p>${deferredPrompt ? '<div class="btns"><button class="btn oil sm" data-act="install">Jetzt installieren</button></div>' : ''}</section>` : '';
@@ -782,9 +799,9 @@ function renderMore(){
     <div class="btns"><button class="btn ghost sm" data-act="resetProfile">Standardprofil laden</button></div></details>
     <label class="field"><span>Darstellung</span><select data-s="theme"><option value="auto" ${S.theme === 'auto' ? 'selected' : ''}>Automatisch</option><option value="light" ${S.theme === 'light' ? 'selected' : ''}>Hell</option><option value="dark" ${S.theme === 'dark' ? 'selected' : ''}>Dunkel</option></select></label>
   </section>
-  ${install}<section class="card"><h3>Sicherung</h3><p class="small muted">Deine Daten liegen ${where}. Die Sicherungsdatei z. B. in «Dateien» oder iCloud Drive ablegen.</p>
-    <div class="btns"><button class="btn ghost sm" data-act="download">Als Datei speichern</button><button class="btn ghost sm" data-act="pick">Datei laden</button></div>
-    <input type="file" id="impFile" accept="application/json,.json" hidden>${pending || '<p class="hint" style="margin-top:6px">Das Laden ersetzt alle vorhandenen Einträge.</p>'}</section>
+  ${install}<section class="card"><h3>Backup</h3><p class="small muted">Deine Daten liegen ${where}. Beim Sichern «In Dateien sichern» wählen, z. B. iCloud Drive.</p>
+    <div class="btns"><button class="btn ghost sm" data-act="download" style="position:relative">Backup sichern</button><button class="btn ghost sm" data-act="pick">Backup importieren</button></div>
+    <input type="file" id="impFile" accept=".json,.gz,.json.gz" hidden>${pending || '<p class="hint" style="margin-top:6px">Der Import ersetzt alle vorhandenen Einträge.</p>'}</section>
   <section class="card"><h3>Alle Daten löschen</h3><p class="small muted">Entfernt alle Einträge und Einstellungen.</p>
     <div class="btns"><button class="btn ${ui.resetArm ? 'bad' : 'ghost'} sm" data-act="reset">${ui.resetArm ? 'Ja, alles löschen' : 'Daten löschen'}</button></div></section>`;
 }
@@ -815,7 +832,7 @@ function render(){
     const base = ui.addMode === 'read' ? 'Ölstand speichern' : 'Lieferung speichern';
     wireForm('a', ui.addMode, null, () => { const b = $('#addSave'); if (b) b.textContent = base; });
   }
-  renderChip();
+  renderChip(); renderBackupInfo();
   requestAnimationFrame(drawCharts);
 }
 function go(tab){ ui.tab = tab; ui.resetArm = false; ui.importData = null; render(); window.scrollTo(0, 0); }
@@ -858,19 +875,39 @@ function onSetting(t){
 }
 async function onAct(act){
   if (act === 'download'){
-    const data = JSON.stringify({v:1, events:state.events, settings:state.settings}, null, 1), fname = 'heizoel-daten-' + D.iso(TODAY) + '.json';
+    const json = JSON.stringify({v:1, exportedAt:new Date().toISOString(), events:state.events, settings:state.settings});
+    const stamp = D.iso(TODAY);
+    // Wie Flugbuch: gzip-komprimiert, falls der Browser es kann (CompressionStream), sonst normales JSON
+    let blob = null, fname = '';
     try {
+      if (typeof CompressionStream !== 'undefined'){
+        blob = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+        fname = 'heizoel-backup-' + stamp + '.json.gz';
+      }
+    } catch(e){ blob = null; }
+    if (!blob){ blob = new Blob([json], {type:'application/json'}); fname = 'heizoel-backup-' + stamp + '.json'; }
+    // 1. Teilen-Menü (iOS: «In Dateien sichern»)
+    if (navigator.share && navigator.canShare){
+      try {
+        const file = new File([blob], fname, {type:blob.type || 'application/octet-stream'});
+        if (navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); setBackup(false); toast('Backup gesichert'); return; }
+      } catch(e){ if (e && e.name === 'AbortError') return; }
+    }
+    try {
+      // 2. Als Claude-Artifact: Download-Funktion des Hosts (nur Text, darum unkomprimiert)
       const dl = window.claude && claude.use ? await claude.use('downloads') : null;
-      if (dl){ await dl.save({filename:fname, data}); toast('Datei gespeichert'); }
-      else { const url = URL.createObjectURL(new Blob([data], {type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Datei wird gespeichert'); }
-    } catch(e){ toast('Speichern abgebrochen.'); }
+      if (dl){ await dl.save({filename:'heizoel-backup-' + stamp + '.json', data:json}); setBackup(false); toast('Backup gesichert'); return; }
+      // 3. Normaler Download
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setBackup(false); toast('Backup wird gespeichert');
+    } catch(e){ toast('Sichern abgebrochen.'); }
   } else if (act === 'install'){
     if (deferredPrompt){ deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch(e){} deferredPrompt = null; render(); }
   } else if (act === 'pick'){
     const f = $('#impFile'); f.value = ''; f.click();
   } else if (act === 'import'){
     if (!ui.importData) return;
-    state = normalize(ui.importData); persist(); ui.importData = null; ui.planVol = null; ui.planDate = null; toast('Daten übernommen'); render();
+    state = normalize(ui.importData); saveLocal(); pushDb(); setBackup(false); ui.importData = null; ui.planVol = null; ui.planDate = null; toast('Backup importiert'); render();
   } else if (act === 'importCancel'){
     ui.importData = null; render();
   } else if (act === 'reset'){
@@ -903,18 +940,28 @@ $('#main').addEventListener('change', e => {
   if (e.target.id === 'impFile') return onFile(e.target.files && e.target.files[0]);
   if (e.target.closest('#settings')) onSetting(e.target);
 });
-/* Sicherungsdatei lesen und zur Bestätigung anzeigen */
+/* Backup-Datei lesen und zur Bestätigung anzeigen */
 async function onFile(file){
   if (!file) return;
-  let d; try { d = JSON.parse(await file.text()); } catch(e){ toast('Die Datei ist keine gültige Sicherung.'); return; }
-  if (!d || !Array.isArray(d.events)){ toast('In der Datei fehlen die Einträge.'); return; }
+  let d;
+  try {
+    // gzip an den Magic Bytes erkennen, nicht an der Endung (Datei könnte umbenannt sein)
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let text;
+    if (bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b){
+      if (typeof DecompressionStream === 'undefined'){ toast('Komprimierte Backups kann dieser Browser nicht lesen.'); return; }
+      text = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    } else text = new TextDecoder('utf-8').decode(bytes);
+    d = JSON.parse(text);
+  } catch(e){ toast('Die Datei ist kein gültiges Backup.'); return; }
+  if (!d || !Array.isArray(d.events)){ toast('Im Backup fehlen die Einträge.'); return; }
   ui.importData = d; render();
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (ui.tab === 'more') render(); });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawCharts, 150); });
 
 /* ---- Start ---- */
-const loc = loadLocal() || window.HEIZOEL_SEED || null; if (loc){ state = normalize(loc); saveLocal(); }
+const loc = loadLocal(); if (loc){ state = normalize(loc); saveLocal(); }
 render();
 initDb();
 })();
