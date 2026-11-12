@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13262C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Heizöl">
+<title>Heizöltank</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#F1F4F3; --surface:#FFFFFF; --ink:#13262C; --muted:#586A70; --line:#D3DCDE; --soft:#E7EDED;
+  --oil:#D48A00; --oil-ink:#7A4D00; --oil-soft:#F6E4B8; --cold:#2B6D8C; --ok:#2B7A56; --warn:#A86A00; --bad:#BC3828;
+  --ok-bg:#DDF0E6; --warn-bg:#F9E8C4; --bad-bg:#F7DAD5;
+  color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1A1E; --surface:#152429; --ink:#E7EEEF; --muted:#94A6AC; --line:#25404A; --soft:#1C323A;
+    --oil:#F0A81E; --oil-ink:#F6CF7A; --oil-soft:#3B2D0C; --cold:#63B2D4; --ok:#52C28D; --warn:#EDB04C; --bad:#F07A68;
+    --ok-bg:#16382B; --warn-bg:#3A2D10; --bad-bg:#432019; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1A1E; --surface:#152429; --ink:#E7EEEF; --muted:#94A6AC; --line:#25404A; --soft:#1C323A;
+  --oil:#F0A81E; --oil-ink:#F6CF7A; --oil-soft:#3B2D0C; --cold:#63B2D4; --ok:#52C28D; --warn:#EDB04C; --bad:#F07A68;
+  --ok-bg:#16382B; --warn-bg:#3A2D10; --bad-bg:#432019; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+h1,h2,h3,.big,.num{font-family:"Bricolage Grotesque","Public Sans",system-ui,sans-serif;letter-spacing:-.01em}
+h1{font-size:26px;margin:0;font-weight:700;line-height:1.1}
+h2{font-size:19px;margin:0 0 4px;font-weight:650;line-height:1.2}
+h3{font-size:15px;margin:0 0 6px;font-weight:650}
+p{margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.wrap{max-width:600px;margin:0 auto;padding:14px 16px 104px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 14px}
+.top .sub{font-size:13px;color:var(--muted);margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface);white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.chip.err i{background:var(--bad)} .chip.loc i{background:var(--warn)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.card.flat{background:transparent;border-style:dashed}
+.hero{display:grid;grid-template-columns:104px 1fr;gap:16px;align-items:center;padding:18px 16px}
+.gauge svg{display:block;width:104px;height:auto}
+.big{font-size:44px;font-weight:700;line-height:1;margin:2px 0 6px}
+.big span{font-size:20px;font-weight:600;color:var(--muted);margin-left:4px}
+.status-line{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pill{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:3px 12px}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.soon{background:var(--warn-bg);color:var(--warn)}
+.pill.now,.pill.late{background:var(--bad-bg);color:var(--bad)}
+.order{border-left:6px solid var(--ok)}
+.order.soon{border-left-color:var(--oil)} .order.now,.order.late{border-left-color:var(--bad)}
+.order h2{margin-top:8px;font-size:22px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:0;margin:12px 0 4px;border-top:1px solid var(--line)}
+.kv div{display:contents}
+.kv dt,.kv dd{margin:0;padding:8px 0;border-bottom:1px solid var(--line)}
+.kv dd{text-align:right;font-weight:650}
+.dates{list-style:none;margin:0;padding:0}
+.dates li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.dates li:last-child{border-bottom:0;padding-bottom:0}
+.dates .d{font-weight:650;text-align:right}
+.dates .r{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
+.chips button,.seg button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 12px;border-radius:999px;cursor:pointer;min-height:34px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.seg button{border-radius:12px;min-height:46px;font-size:15px;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--oil-soft);border-color:var(--oil);color:var(--oil-ink)}
+.chart{position:relative;width:100%;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.chart svg{display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend b{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend .band{height:10px;width:16px;border:0;border-radius:3px;opacity:.35}
+.field{display:block;margin:0 0 12px}
+.field>span{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.field small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+input,select,textarea{font:inherit;width:100%;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;min-height:46px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--oil);outline-offset:1px}
+input[readonly]{opacity:.75}
+textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,monospace}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{font:inherit;font-weight:650;border:0;border-radius:12px;min-height:48px;padding:0 18px;cursor:pointer;background:var(--ink);color:var(--paper);width:100%}
+.btn.oil{background:var(--oil);color:#201300}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.sm{min-height:38px;width:auto;padding:0 14px;font-size:14px}
+.btns{display:flex;gap:10px;margin-top:6px}
+.preview{font-size:13px;border-radius:12px;background:var(--soft);padding:9px 12px;margin:-2px 0 12px}
+.preview.warn{background:var(--warn-bg);color:var(--warn)} .preview.bad{background:var(--bad-bg);color:var(--bad)}
+.log{list-style:none;margin:0;padding:0}
+.log li{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;cursor:pointer}
+.log li:hover{border-color:var(--oil)}
+.log .ic{grid-row:1/3;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--soft)}
+.log .ic.fill{background:var(--oil-soft);color:var(--oil-ink)}
+.log .t{font-weight:650}.log .v{font-weight:650;text-align:right}
+.log .m{grid-column:2/4;font-size:13px;color:var(--muted)}
+.log .m.flag{color:var(--bad)} .log .m.soft{color:var(--warn)}
+.cyc{width:100%;border-collapse:collapse;font-size:13px}
+.cyc th,.cyc td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
+.cyc th:first-child,.cyc td:first-child{text-align:left}
+.cyc th{font-weight:600;color:var(--muted)}
+.scroll{overflow-x:auto}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:30;padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+.bottom nav{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.bottom button{font:inherit;font-size:11px;font-weight:600;color:var(--muted);background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;cursor:pointer;min-height:48px}
+.bottom button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bottom button[aria-current="page"]{color:var(--ink)}
+.bottom button[aria-current="page"] svg{stroke:var(--oil);stroke-width:2.2}
+.bottom .add svg{background:var(--oil);stroke:#201300;border-radius:10px;padding:2px;width:30px;height:30px}
+.sheet{position:fixed;inset:0;background:rgba(10,20,24,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.sheet.open{display:flex}
+.sheet .panel{background:var(--surface);width:100%;max-width:600px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;display:none;max-width:90%}
+.empty{text-align:center;padding:28px 8px}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0 14px}
+summary{cursor:pointer;font-weight:600}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.mgrid label{font-size:12px;color:var(--muted)}
+.mgrid input{padding:8px;min-height:40px}
+.hint{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div><h1>Heizöltank</h1><div class="sub">Füllstand, Verbrauch und Bestelltermin</div></div><span id="chip" class="chip loc"><i></i>Nur in diesem Browser</span></header>
+  <main id="main"></main>
+</div>
+<div class="bottom"><nav aria-label="Hauptnavigation">
+  <button data-tab="home" aria-current="page"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M5 13h14"/></svg>Übersicht</button>
+  <button data-tab="add" class="add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Erfassen</button>
+  <button data-tab="log"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>Verlauf</button>
+  <button data-tab="analysis"><svg viewBox="0 0 24 24"><path d="M5 20v-8M12 20V5M19 20v-11"/></svg>Analyse</button>
+  <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/></svg>Mehr</button>
+</nav></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+/* ===== Kernlogik (testbar, ohne DOM) ===== */
+const DAY = 86400000;
+const pad = n => String(n).padStart(2, '0');
+const D = {
+  parse(s){ const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); },
+  iso(t){ const d = new Date(t); return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate()); },
+  today(){ const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); }
+};
+const PRIOR = [19, 11, 8.5, 6, 4.5, 2.2, 1.9, 1.9, 3.8, 7.7, 12, 17.6];
+const DEFAULTS = { thr:1000, reserve:500, lead:28, buffer:14, capacity:6000, seasonEnd:'05-31', price:170,
+  mild:0.85, kalt:1.2, kMode:'auto', kManual:1.0, profile:PRIOR.slice() };
+
+function dim(m, y){ return new Date(Date.UTC(y, m+1, 0)).getUTCDate(); }
+function baseRate(profile, t){
+  const d = new Date(t), y = d.getUTCFullYear(), m = d.getUTCMonth(), day = d.getUTCDate();
+  let a, b, f;
+  if (day >= 15){ a = m; b = (m+1) % 12; f = (day-15) / dim(m, y); }
+  else { const pm = (m+11) % 12, py = m === 0 ? y-1 : y; a = pm; b = m; f = (day-15+dim(pm, py)) / dim(pm, py); }
+  return profile[a]*(1-f) + profile[b]*f;
+}
+function consumption(t1, t2, mult, profile){
+  let s = 0; for (let t = t1; t < t2; t += DAY) s += baseRate(profile, t) * mult; return s;
+}
+
+/* Ereignisse -> Punkte */
+function buildPoints(events){
+  const evs = events.slice().sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.type === 'read' ? -1 : 1));
+  const pts = [];
+  for (const e of evs){
+    const t = D.parse(e.date);
+    if (e.type === 'read') pts.push({t, level:e.level, kind:'read', ev:e});
+    else {
+      if (e.before != null) pts.push({t, level:e.before, kind:'pre', ev:e});
+      pts.push({t, level:e.after, kind:'post', ev:e, unknownBefore: e.before == null});
+    }
+  }
+  return pts;
+}
+function buildIntervals(pts){
+  const iv = [];
+  for (let i = 1; i < pts.length; i++){
+    const p = pts[i-1], q = pts[i];
+    if (q.kind === 'post') continue;            // Auffüllung bzw. Lücke vor Lieferung ohne Restbestand
+    const days = (q.t - p.t) / DAY;
+    if (days <= 0) continue;
+    const litres = p.level - q.level;
+    iv.push({t1:p.t, t2:q.t, days, litres, rate:litres/days, startLevel:p.level, endLevel:q.level, ev:q.ev,
+      flag:{neg:litres < 0, high:litres/days > 30, short:days < 7}});
+  }
+  return iv;
+}
+/* Zyklen (zwischen Lieferungen) für Fit & Statistik */
+function buildRuns(pts){
+  const runs = []; let cur = null;
+  for (let i = 0; i < pts.length; i++){
+    const p = pts[i];
+    if (p.kind === 'post'){ cur = [p]; runs.push(cur); }
+    else if (cur) cur.push(p); else { cur = [p]; runs.push(cur); }
+  }
+  return runs;
+}
+/* Mess-Segmente: >= minDays lang, Ausreisser (>30 l/Tag) mit Vorgänger zusammengelegt */
+function buildSegments(pts, minDays = 14){
+  const segs = [];
+  for (const run of buildRuns(pts)){
+    const pp = run.filter(p => p.kind !== 'post' || p === run[0]);
+    let list = [];
+    let i = 0;
+    while (i < pp.length - 1){
+      let j = i + 1;
+      while (j < pp.length - 1 && (pp[j].t - pp[i].t) / DAY < minDays) j++;
+      list.push({t1:pp[i].t, t2:pp[j].t, litres:pp[i].level - pp[j].level});
+      i = j;
+    }
+    // zu kurze Reste hinten an Vorgänger hängen
+    if (list.length > 1){
+      const last = list[list.length-1];
+      if ((last.t2 - last.t1)/DAY < minDays){ const prev = list[list.length-2]; prev.t2 = last.t2; prev.litres += last.litres; list.pop(); }
+    }
+    // Ausreisser zusammenlegen
+    for (let k = list.length - 1; k > 0; k--){
+      const s = list[k], d = (s.t2 - s.t1)/DAY;
+      if (s.litres/d > 30 || s.litres < 0){ const p = list[k-1]; p.t2 = s.t2; p.litres += s.litres; list.splice(k,1); }
+    }
+    for (const s of list){ s.days = (s.t2 - s.t1)/DAY; s.rate = s.litres/s.days; segs.push(s); }
+  }
+  return segs;
+}
+function fitK(segs, profile, now){
+  let num = 0, den = 0;
+  for (const s of segs){
+    if (s.days < 7 || s.litres <= 0) continue;
+    const M = consumption(s.t1, s.t2, 1, profile);
+    const age = Math.max(0, (now - s.t2) / DAY);
+    const w = Math.exp(-age / 730);
+    num += w * s.litres; den += w * M;
+  }
+  return den > 0 ? num / den : 1;
+}
+function simulate(t0, L0, opt){
+  const {mult, profile, delivery, until} = opt;
+  const out = [{t:t0, level:L0}]; let L = L0;
+  for (let t = t0; t < until; t += DAY){
+    if (delivery && t === delivery.t) L = Math.min(delivery.cap, L + delivery.vol);
+    L = Math.max(0, L - baseRate(profile, t) * mult);
+    out.push({t:t+DAY, level:L});
+  }
+  return out;
+}
+function crossing(series, thr){ for (const p of series) if (p.level <= thr) return p.t; return null; }
+function levelAt(series, t){
+  if (t <= series[0].t) return series[0].level;
+  for (let i = 1; i < series.length; i++) if (series[i].t >= t){
+    const a = series[i-1], b = series[i], f = (t - a.t) / (b.t - a.t); return a.level + (b.level - a.level) * f; }
+  return series[series.length-1].level;
+}
+function seasonEndAfter(ref, mmdd){
+  const [mm, dd] = mmdd.split('-').map(Number);
+  let y = new Date(ref).getUTCFullYear();
+  let t = Date.UTC(y, mm-1, dd);
+  if (t <= ref + 30*DAY) t = Date.UTC(y+1, mm-1, dd);
+  return t;
+}
+/* Gesamtanalyse */
+function analyze(events, settings, today){
+  const S = Object.assign({}, DEFAULTS, settings || {});
+  const pts = buildPoints(events);
+  if (!pts.length) return {empty:true, S};
+  const intervals = buildIntervals(pts);
+  const segs = buildSegments(pts);
+  const kAuto = fitK(segs, S.profile, today);
+  const k = S.kMode === 'manual' ? S.kManual : kAuto;
+  const last = pts[pts.length-1];
+  const t0 = last.t, L0 = last.level;
+  const horizon = Math.max(today, t0) + 560*DAY;
+  const mk = m => simulate(t0, L0, {mult:k*m, profile:S.profile, until:horizon});
+  const normal = mk(1), mild = mk(S.mild), kalt = mk(S.kalt);
+  const estNow = levelAt(normal, today);
+  const c = {
+    thr:{normal:crossing(normal,S.thr), mild:crossing(mild,S.thr), kalt:crossing(kalt,S.thr)},
+    reserve:{normal:crossing(normal,S.reserve), mild:crossing(mild,S.reserve), kalt:crossing(kalt,S.reserve)},
+    empty:{normal:crossing(normal,0.5), mild:crossing(mild,0.5), kalt:crossing(kalt,0.5)}
+  };
+  const deadline = c.reserve.kalt != null ? c.reserve.kalt - S.lead*DAY : null;
+  const recommended = deadline != null ? deadline - S.buffer*DAY : null;
+  const T = seasonEndAfter(today, S.seasonEnd);
+  const needN = consumption(t0, T, k, S.profile) + S.reserve - L0;
+  const needK = consumption(t0, T, k*S.kalt, S.profile) + S.reserve - L0;
+  const up = x => Math.max(0, Math.ceil(x/100)*100);
+  return {S, pts, intervals, segs, kAuto, k, t0, L0, normal, mild, kalt, estNow, c, deadline, recommended, T,
+          qtyMin: up(needN), qtySafe: up(needK), horizon};
+}
+</script><script>
+window.HEIZOEL_SEED={"v":1,"events":[{"id":"h20210928f","type":"fill","date":"2021-09-28","before":null,"after":5803,"vol":null},{"id":"h20220509r","type":"read","date":"2022-05-09","level":2600},{"id":"h20220515r","type":"read","date":"2022-05-15","level":2550},{"id":"h20220711r","type":"read","date":"2022-07-11","level":2500},{"id":"h20220805f","type":"fill","date":"2022-08-05","before":null,"after":5860,"vol":null},{"id":"h20230807r","type":"read","date":"2023-08-07","level":3100},{"id":"h20231019r","type":"read","date":"2023-10-19","level":3050},{"id":"h20231228r","type":"read","date":"2023-12-28","level":2000},{"id":"h20240113r","type":"read","date":"2024-01-13","level":1720},{"id":"h20240130f","type":"fill","date":"2024-01-30","before":null,"after":5211,"vol":null},{"id":"h20240229r","type":"read","date":"2024-02-29","level":5000},{"id":"h20240331r","type":"read","date":"2024-03-31","level":4800},{"id":"h20250531r","type":"read","date":"2025-05-31","level":700},{"id":"h20250707f","type":"fill","date":"2025-07-07","before":null,"after":5275,"vol":null},{"id":"h20250831r","type":"read","date":"2025-08-31","level":5158},{"id":"h20260215r","type":"read","date":"2026-02-15","level":4050},{"id":"h20260322r","type":"read","date":"2026-03-22","level":2920},{"id":"h20260903r","type":"read","date":"2026-09-03","level":2220},{"id":"h20261019r","type":"read","date":"2026-10-19","level":1950},{"id":"h20261108r","type":"read","date":"2026-11-08","level":1700}],"settings":{"theme":"auto"}};
+</script><script>
+/* ===== UI: Zustand, Speicher, Hilfsfunktionen ===== */
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const fN = n => Math.round(n).toLocaleString('de-CH');
+const f1 = n => (Math.round(n*10)/10).toLocaleString('de-CH', {minimumFractionDigits:1, maximumFractionDigits:1});
+const fD = t => { const d = new Date(t); return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth()+1) + '.' + d.getUTCFullYear(); };
+const fDs = t => { const d = new Date(t); return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth()+1) + '.' + String(d.getUTCFullYear()).slice(2); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { if (v == null) return null; const s = String(v).replace(/[\s’'`]/g, '').replace(',', '.'); if (s === '') return null; const n = parseFloat(s); return isNaN(n) ? null : n; };
+const uid = () => 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+let TODAY = D.today();
+const rel = t => { const d = Math.round((t - TODAY) / DAY); if (d === 0) return 'heute'; if (d === 1) return 'morgen'; if (d === -1) return 'gestern'; return d > 0 ? 'in ' + d + ' Tagen' : 'vor ' + (-d) + ' Tagen'; };
+
+let state = { v:1, events:[], settings:Object.assign({}, DEFAULTS, {theme:'auto'}) };
+const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importArm:false };
+const LS_KEY = 'heizoel-tracker-v1';
+let dbDoc = null, storageMode = 'local', saveState = 'ok', A = null, deferredPrompt = null;
+
+function normalize(d){
+  const s = Object.assign({}, DEFAULTS, {theme:'auto'}, (d && d.settings) || {});
+  if (!Array.isArray(s.profile) || s.profile.length !== 12) s.profile = PRIOR.slice();
+  const evs = ((d && d.events) || []).filter(e => e && e.date && (e.type === 'read' || e.type === 'fill')).map(e => e.type === 'read'
+    ? {id:e.id || uid(), type:'read', date:e.date, level:Number(e.level)}
+    : {id:e.id || uid(), type:'fill', date:e.date, before:e.before == null ? null : Number(e.before), after:Number(e.after), vol:e.vol == null ? null : Number(e.vol)});
+  return {v:1, events:evs, settings:s};
+}
+function loadLocal(){ try { const s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch(e){} return null; }
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+let pushTimer = null;
+function pushDb(){
+  if (!dbDoc) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    try { await dbDoc.set(JSON.parse(JSON.stringify(state))); saveState = 'ok'; }
+    catch(e){ saveState = 'err'; }
+    renderChip();
+  }, 350);
+}
+function persist(){ saveLocal(); pushDb(); }
+async function initDb(){
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    dbDoc = db.collection('data/users/' + id).doc('heizoel');
+    const snap = await dbDoc.get();
+    storageMode = 'db';
+    if (snap.exists && snap.data() && Array.isArray(snap.data().events) && snap.data().events.length){
+      state = normalize(snap.data()); saveLocal();
+    } else if (state.events.length){ pushDb(); }
+    render();
+  } catch(e){ storageMode = 'local'; renderChip(); }
+}
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 2600); }
+function applyTheme(){ const th = state.settings.theme; if (th === 'light' || th === 'dark') document.documentElement.setAttribute('data-theme', th); else document.documentElement.removeAttribute('data-theme'); }
+function renderChip(){
+  const c = $('#chip'); if (!c) return;
+  if (saveState === 'err'){ c.className = 'chip err'; c.innerHTML = '<i></i>Speichern fehlgeschlagen'; }
+  else if (storageMode === 'db'){ c.className = 'chip'; c.innerHTML = '<i></i>Im Konto gespeichert'; }
+  else if (!window.claude){ c.className = 'chip'; c.innerHTML = '<i></i>Auf diesem Gerät gespeichert'; }
+  else { c.className = 'chip loc'; c.innerHTML = '<i></i>Nur in diesem Browser'; }
+}
+function addEvent(e){ e.id = uid(); state.events.push(e); persist(); }
+function updateEvent(id, e){ const i = state.events.findIndex(x => x.id === id); if (i >= 0){ state.events[i] = Object.assign({id}, e); persist(); } }
+function deleteEvent(id){ state.events = state.events.filter(x => x.id !== id); persist(); }
+
+/* ===== Ableitungen für die Ansicht ===== */
+function planOf(){
+  if (!A || A.empty) return null;
+  const vol = ui.planVol != null ? ui.planVol : A.qtySafe;
+  if (!vol || vol <= 0) return null;
+  let dt = ui.planDate ? D.parse(ui.planDate) : Math.max(TODAY, A.recommended != null ? A.recommended : TODAY) + A.S.lead * DAY;
+  dt = Math.max(dt, TODAY, A.t0);
+  const until = Math.max(A.T + 60*DAY, dt + 30*DAY);
+  const mk = m => simulate(A.t0, A.L0, {mult:A.k*m, profile:A.S.profile, delivery:{t:dt, vol, cap:A.S.capacity}, until});
+  const normal = mk(1), mild = mk(A.S.mild), kalt = mk(A.S.kalt);
+  const atDel = levelAt(A.normal, dt);
+  return {vol, dt, normal, mild, kalt, atDel, endN:levelAt(normal, A.T), endK:levelAt(kalt, A.T), over: atDel + vol > A.S.capacity};
+}
+function status(){
+  if (!A || A.empty || A.recommended == null) return {k:'ok', label:'Noch Zeit'};
+  if (TODAY > A.deadline) return {k:'late', label:'Überfällig – jetzt bestellen'};
+  const d = Math.round((A.recommended - TODAY) / DAY);
+  if (d <= 0) return {k:'now', label:'Jetzt bestellen'};
+  if (d <= 14) return {k:'soon', label:'Bald bestellen'};
+  return {k:'ok', label:'Noch Zeit'};
+}
+/* ===== UI: Ansichten ===== */
+const ICON = {
+  tank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M5 13h14"/></svg>',
+  drop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+  truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>'
+};
+function emptyState(){
+  return `<section class="card empty"><h2>Noch keine Daten</h2><p class="muted">Erfasse den ersten Ölstand oder eine Lieferung, dann berechnet die App Verbrauch und Bestelltermin.</p><button class="btn oil" data-go="add" style="max-width:260px">Ersten Eintrag erfassen</button></section>`;
+}
+function gaugeSvg(){
+  const S = A.S, cap = S.capacity, top = 14, hgt = 172, x = 12, w = 48;
+  const yv = v => top + hgt * (1 - Math.max(0, Math.min(1, v / cap)));
+  const frac = Math.max(0, Math.min(1, A.estNow / cap));
+  const yTop = yv(A.estNow);
+  const fill = frac > 0.005 ? `<path d="M${x},${yTop} q6,-4 12,0 t12,0 t12,0 t12,0 V${top+hgt} H${x} Z" fill="url(#oilg)"/>` : '';
+  const lab = (v, t, c) => `<line x1="${x+w}" x2="${x+w+7}" y1="${yv(v)}" y2="${yv(v)}" stroke="${c || 'var(--muted)'}" stroke-width="1.5"/><text x="${x+w+10}" y="${yv(v)+3.5}" font-size="10" fill="${c || 'var(--muted)'}">${t}</text>`;
+  return `<svg viewBox="0 0 108 200" role="img" aria-label="Tankfüllstand ${fN(A.estNow)} Liter">
+  <defs><linearGradient id="oilg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--oil)"/><stop offset="1" style="stop-color:var(--oil);stop-opacity:.72"/></linearGradient>
+  <clipPath id="tankClip"><rect x="${x}" y="${top}" width="${w}" height="${hgt}" rx="12"/></clipPath></defs>
+  <rect x="${x+16}" y="${top-8}" width="16" height="9" rx="3" fill="var(--ink)"/>
+  <rect x="${x}" y="${top}" width="${w}" height="${hgt}" rx="12" fill="var(--soft)"/>
+  <g clip-path="url(#tankClip)">${fill}<line x1="${x}" x2="${x+w}" y1="${yv(S.thr)}" y2="${yv(S.thr)}" stroke="var(--bad)" stroke-width="1.6" stroke-dasharray="4 3"/></g>
+  <rect x="${x}" y="${top}" width="${w}" height="${hgt}" rx="12" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+  ${lab(cap, fN(cap))}${lab(S.thr, fN(S.thr), 'var(--bad)')}${S.reserve !== S.thr ? lab(S.reserve, fN(S.reserve)) : ''}
+  </svg>`;
+}
+function renderHome(){
+  if (A.empty) return emptyState();
+  const S = A.S, st = status();
+  const lastIv = A.intervals[A.intervals.length - 1];
+  const pct = Math.round(100 * Math.max(0, Math.min(1, A.estNow / S.capacity)));
+  const hero = `<section class="card hero"><div class="gauge">${gaugeSvg()}</div><div>
+    <div class="muted small">Geschätzter Stand heute</div>
+    <div class="big num">≈ ${fN(A.estNow)}<span>l</span></div>
+    <div class="small muted">Zuletzt gemessen: ${fN(A.L0)} l am ${fD(A.t0)} (${rel(A.t0)}). Tank zu ${pct} % gefüllt.</div>
+    ${lastIv ? `<div class="small" style="margin-top:6px">Letzter Verbrauch: <b>${f1(lastIv.rate)} l/Tag</b> <span class="muted">(${Math.round(lastIv.days)} Tage)</span></div>` : ''}
+  </div></section>`;
+  const none = A.qtyMin <= 0 && A.qtySafe <= 0;
+  const order = `<section class="card order ${st.k}"><span class="pill ${st.k}">${st.label}</span>
+    <h2>${A.recommended != null ? 'Bestellen bis ' + fD(A.recommended) : 'Kein Bestelltermin berechenbar'}</h2>
+    ${A.recommended != null ? `<p class="muted">${rel(A.recommended)} empfohlen · spätestens ${fD(A.deadline)} (Lieferfrist ${S.lead} Tage, kalter Winter)</p>` : ''}
+    ${none ? `<p>Der Vorrat reicht bis ${fD(A.T)} inklusive ${fN(S.reserve)} l Reserve.</p>` : `<dl class="kv">
+      <div><dt>Menge bis ${fD(A.T)}, normaler Winter</dt><dd>${fN(A.qtyMin)} l</dd></div>
+      <div><dt>Menge bei kaltem Winter</dt><dd>${fN(A.qtySafe)} l</dd></div>
+      <div><dt>Kosten ca. bei ${fN(S.price)} CHF/100 l</dt><dd>${fN(A.qtyMin * S.price / 100)}–${fN(A.qtySafe * S.price / 100)} CHF</dd></div></dl>
+    <p class="small muted">Beide Mengen enthalten ${fN(S.reserve)} l Reserve am Ende der Heizperiode.</p>`}</section>`;
+  const dr = (label, key) => {
+    const c = A.c[key], n = c.normal;
+    const rng = (c.kalt || c.mild) ? `Spanne: ${c.kalt ? 'kalt ' + fD(c.kalt) : 'kalt –'} bis ${c.mild ? 'mild ' + fD(c.mild) : 'mild –'}` : '';
+    return `<li><span>${label}</span><span class="d">${n ? fD(n) : 'später'}</span><span class="r">${n ? rel(n) + (rng ? ' · ' + rng : '') : 'nicht im Prognosezeitraum'}</span></li>`;
+  };
+  const dates = `<section class="card"><h2>Termine ohne Lieferung</h2><ul class="dates">
+    ${dr(fN(S.thr) + ' l erreicht', 'thr')}${S.reserve !== S.thr ? dr('Reserve ' + fN(S.reserve) + ' l unterschritten', 'reserve') : ''}${dr('Tank leer', 'empty')}</ul></section>`;
+  const P = planOf();
+  const defDt = Math.max(TODAY, A.recommended != null ? A.recommended : TODAY) + S.lead * DAY;
+  const chartCard = `<section class="card"><h2>Füllstand und Prognose</h2>
+    <div class="chips" id="rangeChips"><button data-range="cycle" aria-pressed="${ui.range === 'cycle'}">Dieser Zyklus</button><button data-range="all" aria-pressed="${ui.range === 'all'}">Alles</button></div>
+    <div class="chart" id="chartLevel"></div>
+    <div class="legend"><span><b style="border-color:var(--ink)"></b>Verlauf</span><span><b style="border-color:var(--oil);border-top-style:dashed"></b>Prognose normal</span><span><b class="band" style="background:var(--cold)"></b>mild bis kalt</span><span><b style="border-color:var(--ok)"></b>mit Lieferung</span></div>
+    <h3 style="margin-top:16px">Lieferung planen</h3>
+    <div class="row2"><label class="field"><span>Menge (l)</span><input id="plan-vol" inputmode="numeric" value="${ui.planVol != null ? ui.planVol : A.qtySafe}"></label>
+    <label class="field"><span>Lieferdatum</span><input id="plan-date" type="date" value="${D.iso(P ? P.dt : defDt)}"></label></div>
+    <div class="preview" id="plan-res"></div></section>`;
+  return hero + order + dates + chartCard;
+}
+function planResultHtml(P){
+  if (!P) return `Ohne Lieferung ist der Tank am ${A.c.empty.normal ? fD(A.c.empty.normal) : '–'} leer (kalter Winter: ${A.c.empty.kalt ? fD(A.c.empty.kalt) : '–'}).`;
+  let h = `Mit ${fN(P.vol)} l am ${fD(P.dt)}: Stand am ${fD(A.T)} ≈ <b>${fN(P.endN)} l</b>, bei kaltem Winter ≈ <b>${fN(P.endK)} l</b>.`;
+  if (P.atDel <= 0) h += ' Achtung: Bis zu diesem Datum ist der Tank leer.';
+  if (P.over) h += ` Der Tank fasst ${fN(A.S.capacity)} l, es passen nur ${fN(Math.max(0, A.S.capacity - P.atDel))} l.`;
+  return h;
+}
+function planClass(P){ if (!P) return 'preview'; if (P.atDel <= 0 || P.endK <= 0) return 'preview bad'; if (P.endK < A.S.reserve || P.over) return 'preview warn'; return 'preview'; }
+
+/* ---- Formulare ---- */
+function formHtml(p, type, v){
+  v = v || {};
+  const dateV = v.date || D.iso(TODAY);
+  const val = x => x == null ? '' : x;
+  if (type === 'read') return `
+    <label class="field"><span>Datum</span><input type="date" id="${p}-date" value="${dateV}"></label>
+    <label class="field"><span>Ölstand in Litern</span><input type="text" inputmode="numeric" id="${p}-level" value="${val(v.level)}" placeholder="z. B. 1700" autocomplete="off"></label>
+    <div class="preview" id="${p}-prev" hidden></div>`;
+  return `
+    <label class="field"><span>Lieferdatum</span><input type="date" id="${p}-date" value="${dateV}"></label>
+    <div class="row2">
+      <label class="field"><span>Restbestand vorher (l)</span><input type="text" inputmode="numeric" id="${p}-before" value="${val(v.before)}" autocomplete="off"></label>
+      <label class="field"><span>Liefermenge (l)</span><input type="text" inputmode="numeric" id="${p}-vol" value="${val(v.vol)}" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>Neuer Gesamtbestand (l)</span><input type="text" inputmode="numeric" id="${p}-after" value="${val(v.after)}" autocomplete="off"><small>Zwei Felder genügen, das dritte wird berechnet.</small></label>
+    <div class="preview" id="${p}-prev" hidden></div>`;
+}
+function readInfo(date, level, excludeId){
+  const t = D.parse(date), cap = state.settings.capacity;
+  const pts = buildPoints(state.events.filter(e => e.id !== excludeId)).filter(x => x.t <= t);
+  const b = pts[pts.length - 1];
+  if (!b) return {text:'Erster Eintrag. Ab dem zweiten Eintrag berechnet die App den Verbrauch.', cls:'', warn:false};
+  if (level > cap) return {text:`Der Stand liegt über der Tankgrösse (${fN(cap)} l).`, cls:'warn', warn:true};
+  const days = (t - b.t) / DAY, lit = b.level - level;
+  if (days <= 0) return {text:'Für dieses Datum gibt es schon einen Eintrag. Prüfe das Datum.', cls:'warn', warn:true};
+  if (lit < 0) return {text:`Der Stand liegt ${fN(-lit)} l über dem Stand vom ${fD(b.t)}. Fehlt eine Lieferung?`, cls:'warn', warn:true};
+  const r = lit / days;
+  if (r > 30) return {text:`Seit ${fD(b.t)}: ${fN(lit)} l in ${Math.round(days)} Tagen = ${f1(r)} l/Tag. Das ist auffällig hoch, bitte die Ablesung prüfen.`, cls:'bad', warn:true};
+  return {text:`Seit ${fD(b.t)}: Verbrauch ${fN(lit)} l in ${Math.round(days)} Tagen = ${f1(r)} l/Tag.`, cls:'', warn:false};
+}
+function wireForm(p, type, excludeId, onChange){
+  const prev = $('#' + p + '-prev');
+  const upd = () => {
+    ui.confirmKey = null;
+    if (onChange) onChange();
+    if (type === 'read'){
+      const d = $('#' + p + '-date').value, l = num($('#' + p + '-level').value);
+      if (!d || l == null){ prev.hidden = true; return; }
+      const info = readInfo(d, l, excludeId); prev.hidden = false; prev.className = 'preview ' + info.cls; prev.textContent = info.text;
+    } else {
+      const a = num($('#' + p + '-after').value), b = num($('#' + p + '-before').value);
+      if (a == null){ prev.hidden = true; return; }
+      prev.hidden = false; prev.className = 'preview';
+      prev.textContent = b != null ? `Geliefert: ${fN(a - b)} l. Tank danach: ${fN(a)} l.` : `Tank danach: ${fN(a)} l. Ohne Restbestand fehlt der Verbrauch seit der letzten Messung.`;
+      if (a > state.settings.capacity){ prev.className = 'preview warn'; prev.textContent += ` Das ist mehr als die Tankgrösse (${fN(state.settings.capacity)} l).`; }
+    }
+  };
+  $('#' + p + '-date').addEventListener('input', upd);
+  if (type === 'read'){ $('#' + p + '-level').addEventListener('input', upd); }
+  else {
+    const f = {b:$('#' + p + '-before'), v:$('#' + p + '-vol'), a:$('#' + p + '-after')}, order = [];
+    const touch = k => { const i = order.indexOf(k); if (i >= 0) order.splice(i, 1); order.push(k); if (order.length > 2) order.shift(); };
+    const comp = () => {
+      if (order.length < 2) return;
+      const target = ['b', 'v', 'a'].find(k => order.indexOf(k) < 0);
+      const B = num(f.b.value), V = num(f.v.value), AA = num(f.a.value);
+      if (target === 'a' && B != null && V != null) f.a.value = B + V;
+      if (target === 'b' && AA != null && V != null) f.b.value = AA - V;
+      if (target === 'v' && B != null && AA != null) f.v.value = AA - B;
+    };
+    ['b', 'v', 'a'].forEach(k => f[k].addEventListener('input', () => { touch(k); comp(); upd(); }));
+  }
+  upd();
+}
+function collect(p, type){
+  const date = $('#' + p + '-date').value, cap = state.settings.capacity;
+  if (!date) return {err:'Bitte ein Datum wählen.'};
+  if (type === 'read'){
+    const level = num($('#' + p + '-level').value);
+    if (level == null || level < 0) return {err:'Bitte den Ölstand in Litern eingeben.'};
+    const info = readInfo(date, level, p === 'x' && ui.sheet ? ui.sheet : null);
+    return {ev:{type:'read', date, level:Math.round(level)}, warn:info.warn ? info.text : null};
+  }
+  let b = num($('#' + p + '-before').value), v = num($('#' + p + '-vol').value), a = num($('#' + p + '-after').value);
+  if (a == null && b != null && v != null) a = b + v;
+  if (a == null || a <= 0) return {err:'Bitte Gesamtbestand oder Restbestand und Menge eingeben.'};
+  if (b == null && v != null) b = a - v;
+  if (b != null && (b < 0 || a < b)) return {err:'Der Gesamtbestand darf nicht kleiner sein als der Restbestand.'};
+  return {ev:{type:'fill', date, before:b == null ? null : Math.round(b), after:Math.round(a), vol:b == null ? null : Math.round(a - b)}, warn:a > cap ? `Der Gesamtbestand liegt über der Tankgrösse (${fN(cap)} l).` : null};
+}
+function renderAdd(){
+  const m = ui.addMode, last = state.events.length ? state.events.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0] : null;
+  return `<div class="seg"><button data-mode="read" aria-pressed="${m === 'read'}">Ölstand ablesen</button><button data-mode="fill" aria-pressed="${m === 'fill'}">Lieferung</button></div>
+  <section class="card"><h2>${m === 'read' ? 'Neuer Ölstand' : 'Neue Lieferung'}</h2><div id="addForm">${formHtml('a', m)}</div>
+  <button class="btn oil" id="addSave">${m === 'read' ? 'Ölstand speichern' : 'Lieferung speichern'}</button></section>
+  ${last ? `<p class="muted small">Letzter Eintrag: ${last.type === 'read' ? 'Ölstand ' + fN(last.level) + ' l' : 'Lieferung, Gesamtbestand ' + fN(last.after) + ' l'} am ${fD(D.parse(last.date))}.</p>` : ''}`;
+}
+
+/* ---- Verlauf ---- */
+function renderLog(){
+  if (!state.events.length) return emptyState();
+  const evs = state.events.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : (a.type === 'fill' ? -1 : 1));
+  const items = evs.map(e => {
+    const iv = A.intervals.find(i => i.ev && i.ev.id === e.id);
+    let meta = '', cls = '';
+    if (iv){
+      meta = `Verbrauch ${fN(iv.litres)} l in ${Math.round(iv.days)} Tagen · ${f1(iv.rate)} l/Tag`;
+      if (iv.flag.neg){ cls = 'flag'; meta = `Stand ${fN(-iv.litres)} l höher als zuvor. Fehlt eine Lieferung?`; }
+      else if (iv.flag.high){ cls = 'flag'; meta += ' · auffällig hoch, Ablesung prüfen'; }
+      else if (iv.flag.short){ cls = 'soft'; meta += ' · kurzes Intervall, ungenau'; }
+    } else if (e.type === 'read') meta = 'Verbrauch nicht berechenbar (kein vorheriger Stand)';
+    if (e.type === 'fill'){
+      const f = (e.vol != null ? `Geliefert ${fN(e.vol)} l` : 'Liefermenge unbekannt') + (e.before != null ? `, Restbestand ${fN(e.before)} l` : ', Restbestand unbekannt');
+      meta = f + (iv ? ' · davor ' + f1(iv.rate) + ' l/Tag' : '');
+      if (iv && iv.flag.neg) cls = 'flag';
+    }
+    return `<li data-id="${e.id}"><span class="ic ${e.type}">${e.type === 'fill' ? ICON.truck : ICON.drop}</span>
+      <span class="t">${fD(D.parse(e.date))}${e.type === 'fill' ? ' · Lieferung' : ''}</span><span class="v">${e.type === 'read' ? fN(e.level) + ' l' : '→ ' + fN(e.after) + ' l'}</span>
+      <span class="m ${cls}">${esc(meta)}</span></li>`;
+  }).join('');
+  return `<h2 style="margin:0 0 10px">Verlauf</h2><ul class="log">${items}</ul><p class="muted small">Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen.</p>`;
+}
+
+/* ---- Analyse ---- */
+const DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function cyclesTable(){
+  const runs = buildRuns(A.pts).filter(r => r.length >= 2);
+  const rows = runs.map((r, i) => {
+    const s = r[0], e = r[r.length - 1], days = (e.t - s.t) / DAY, lit = s.level - e.level;
+    if (days <= 0) return '';
+    const ongoing = i === runs.length - 1;
+    const yr = days >= 330 ? fN(lit / days * 365) : '–';
+    return `<tr><td>${fDs(s.t)}${ongoing ? ' (läuft)' : ''}</td><td>${Math.round(days)}</td><td>${fN(lit)}</td><td>${f1(lit / days)}</td><td>${yr}</td></tr>`;
+  }).reverse().join('');
+  return `<div class="scroll"><table class="cyc"><thead><tr><th>Ab Lieferung</th><th>Tage</th><th>Liter</th><th>l/Tag</th><th>l/Jahr</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderAnalysis(){
+  if (A.empty) return emptyState();
+  const yearTotal = A.S.profile.reduce((s, v, i) => s + v * DIM[i], 0) * A.k;
+  return `<section class="card"><h2>Verbrauch pro Tag</h2><p class="muted small">Jedes Messintervall als Balken, die Linie zeigt das Modell.</p><div class="chart" id="chartRate"></div></section>
+  <section class="card"><h2>Verbrauch pro Monat</h2><p class="muted small">Modell in Litern, zusammen ${fN(yearTotal)} l pro Jahr. Punkte sind Messungen aus Intervallen von 14 bis 70 Tagen.</p><div class="chart" id="chartMonth"></div></section>
+  <section class="card"><h2>Heizzyklen</h2>${cyclesTable()}<p class="muted small" style="margin-top:8px">Ein Zyklus läuft von einer Lieferung bis zur nächsten. Die Jahreswerte erscheinen ab 330 Tagen Dauer.</p></section>
+  <section class="card"><h3>So rechnet die App</h3><p class="small muted">Ein Monatsprofil (l/Tag je Monat) bildet das typische Heizjahr ab. Ein Faktor passt es an deinen Verbrauch an. Aktuell ist er <b>${A.k.toFixed(2)}</b>${A.S.kMode === 'manual' ? ' (manuell gesetzt, automatisch wären ' + A.kAuto.toFixed(2) + ')' : ' (aus deinen Messungen berechnet, neuere Messungen zählen stärker)'}. Ausreisser über 30 l/Tag werden mit dem vorherigen Intervall zusammengelegt. Der kalte Winter rechnet mit +${Math.round((A.S.kalt - 1) * 100)} %, der milde mit −${Math.round((1 - A.S.mild) * 100)} %.</p></section>`;
+}
+/* ===== UI: Diagramme ===== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function monthTicks(x0, x1, W){
+  const span = (x1 - x0) / DAY, step = span > 420 ? 3 : span > 200 ? 2 : 1, out = [];
+  const d = new Date(x0); let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+  for (let i = 0; i < 60; i++){
+    const t = Date.UTC(y, m, 1);
+    if (t > x1) break;
+    if (m % step === 0 || step === 1) out.push({t, label:MON[m % 12] + (m % 12 === 0 ? ' ' + String(y + (m >= 12 ? 1 : 0)).slice(2) : '')});
+    m++; if (m > 11){ m = 0; y++; }
+  }
+  return out;
+}
+function yearLabelFix(ticks){
+  // Januar-Ticks bekommen das Jahr; erster Tick ebenfalls
+  return ticks.map((t, i) => { const d = new Date(t.t); const base = MON[d.getUTCMonth()]; return {t:t.t, label:(d.getUTCMonth() === 0 || i === 0) ? base + ' ' + String(d.getUTCFullYear()).slice(2) : base}; });
+}
+function pathOf(series, X, Y, x1){
+  let s = '', first = true;
+  for (const p of series){ if (p.t > x1 + DAY) break; s += (first ? 'M' : 'L') + X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1); first = false; }
+  return s;
+}
+function setupTip(host, svg, m, W, H, x0, x1, tipFn){
+  const tip = document.createElement('div'); tip.className = 'tip'; host.appendChild(tip);
+  const cur = svg.querySelector('#cursor');
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
+    if (px < m.l || px > W - m.r){ tip.style.display = 'none'; if (cur) cur.setAttribute('opacity', 0); return; }
+    const t = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0);
+    const html = tipFn(t); if (!html){ tip.style.display = 'none'; return; }
+    tip.innerHTML = html; tip.style.display = 'block';
+    const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, px - tw / 2)) + 'px'; tip.style.top = '2px';
+    if (cur){ cur.setAttribute('x1', px); cur.setAttribute('x2', px); cur.setAttribute('opacity', .5); }
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; if (cur) cur.setAttribute('opacity', 0); });
+}
+function histLevel(t){
+  const pts = A.pts;
+  if (t < pts[0].t || t > pts[pts.length - 1].t) return null;
+  for (let i = 1; i < pts.length; i++){
+    if (pts[i].t >= t){
+      const a = pts[i - 1], b = pts[i];
+      if (b.kind === 'post') return b.t === t ? b.level : a.level;
+      if (b.t === a.t) return b.level;
+      return a.level + (b.level - a.level) * (t - a.t) / (b.t - a.t);
+    }
+  }
+  return null;
+}
+function drawLevel(){
+  const host = $('#chartLevel'); if (!host) return;
+  const S = A.S, P = planOf(), W = Math.max(280, host.clientWidth), H = 270, m = {l:44, r:12, t:16, b:26};
+  const lastFill = [...A.pts].reverse().find(p => p.kind === 'post');
+  const x0 = ui.range === 'all' ? A.pts[0].t : Math.min(lastFill ? lastFill.t - 10 * DAY : A.pts[0].t, TODAY - 100 * DAY);
+  const endNo = A.c.empty.mild || (TODAY + 300 * DAY);
+  const x1 = Math.max(TODAY + 150 * DAY, (P ? A.T + 25 * DAY : endNo + 20 * DAY));
+  let maxL = Math.max(...A.pts.filter(p => p.t >= x0).map(p => p.level), A.L0);
+  if (P) maxL = Math.max(maxL, ...P.normal.filter(p => p.t <= x1).map(p => p.level));
+  const ymax = Math.min(Math.ceil(S.capacity / 1000) * 1000, Math.max(3000, Math.ceil(maxL / 1000) * 1000));
+  const X = t => m.l + (t - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => m.t + (1 - Math.min(v, ymax) / ymax) * (H - m.t - m.b);
+  let g = '';
+  for (let v = 0; v <= ymax; v += 1000) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
+  for (const t of yearLabelFix(monthTicks(x0, x1, W))) g += `<line x1="${X(t.t)}" x2="${X(t.t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t.t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${t.label}</text>`;
+  const band = (a, b, col) => { const A1 = a.filter(p => p.t <= x1 + DAY), B1 = b.filter(p => p.t <= x1 + DAY); return `<path d="M${A1.map(p => X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1)).join('L')}L${B1.slice().reverse().map(p => X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1)).join('L')}Z" fill="${col}" opacity=".22"/>`; };
+  g += band(A.mild, A.kalt, 'var(--cold)');
+  g += `<path d="${pathOf(A.normal, X, Y, x1)}" fill="none" stroke="var(--oil)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  if (P){
+    g += band(P.mild, P.kalt, 'var(--ok)');
+    g += `<path d="${pathOf(P.normal, X, Y, x1)}" fill="none" stroke="var(--ok)" stroke-width="2.4"/>`;
+    g += `<line x1="${X(P.dt)}" x2="${X(P.dt)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${X(P.dt) + 4}" y="${m.t + 34}" font-size="10" fill="var(--ok)">Lieferung</text>`;
+  }
+  g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.thr)}" y2="${Y(S.thr)}" stroke="var(--bad)" stroke-width="1.2" stroke-dasharray="5 3"/><text x="${m.l + 4}" y="${Y(S.thr) - 4}" text-anchor="start" font-size="10" fill="var(--bad)">Schwelle ${fN(S.thr)} l</text>`;
+  if (S.reserve !== S.thr) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(S.reserve)}" y2="${Y(S.reserve)}" stroke="var(--bad)" stroke-width="1" opacity=".5"/><text x="${m.l + 4}" y="${Y(S.reserve) + 12}" text-anchor="start" font-size="10" fill="var(--bad)" opacity=".8">Reserve ${fN(S.reserve)} l</text>`;
+  let d = '';
+  A.pts.forEach((p, i) => { d += ((i === 0 || (p.kind === 'post' && p.unknownBefore)) ? 'M' : 'L') + X(p.t).toFixed(1) + ',' + Y(p.level).toFixed(1); });
+  g += `<g clip-path="url(#clipL)"><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+  A.pts.forEach(p => { if (p.kind === 'read') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="3" fill="var(--ink)"/>`; else if (p.kind === 'post') g += `<circle cx="${X(p.t)}" cy="${Y(p.level)}" r="4" fill="var(--surface)" stroke="var(--oil)" stroke-width="2.4"/>`; });
+  g += '</g>';
+  g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/><text x="${X(TODAY) + 4}" y="${m.t + 9}" font-size="10" fill="var(--ink)">heute</text>`;
+  if (A.recommended != null && A.recommended > x0 && A.recommended < x1) g += `<line x1="${X(A.recommended)}" x2="${X(A.recommended)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--oil)" stroke-width="1.6"/><text x="${X(A.recommended) + 4}" y="${m.t + 21}" font-size="10" font-weight="600" fill="var(--oil-ink)">bestellen</text>`;
+  g += `<line id="cursor" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" opacity="0"/>`;
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Füllstandsverlauf und Prognose"><defs><clipPath id="clipL"><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/></clipPath></defs>${g}</svg>`;
+  const svg = host.querySelector('svg');
+  setupTip(host, svg, m, W, H, x0, x1, t => {
+    const d0 = fD(Math.round(t / DAY) * DAY);
+    if (t <= A.t0){ const l = histLevel(t); return l == null ? null : `${d0}<br><b>${fN(l)} l</b> Verlauf`; }
+    const n = levelAt(A.normal, t), mi = levelAt(A.mild, t), ka = levelAt(A.kalt, t);
+    let s = `${d0}<br>Prognose <b>${fN(n)} l</b><br><span style="opacity:.8">kalt ${fN(ka)} · mild ${fN(mi)}</span>`;
+    if (P && t >= P.dt) s += `<br>Mit Lieferung <b>${fN(levelAt(P.normal, t))} l</b>`;
+    return s;
+  });
+}
+function drawRate(){
+  const host = $('#chartRate'); if (!host) return;
+  const W = Math.max(280, host.clientWidth), H = 230, m = {l:34, r:10, t:12, b:26};
+  const ivs = A.intervals; if (!ivs.length){ host.innerHTML = '<p class="muted small">Noch kein Messintervall.</p>'; return; }
+  const x0 = ivs[0].t1, x1 = ivs[ivs.length - 1].t2;
+  const yTop = Math.max(20, Math.min(35, Math.ceil(Math.max(...ivs.map(i => i.rate)) / 5) * 5));
+  const X = t => m.l + (t - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => m.t + (1 - Math.max(0, Math.min(v, yTop)) / yTop) * (H - m.t - m.b);
+  let g = '';
+  for (let v = 0; v <= yTop; v += 5) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;
+  const span = (x1 - x0) / DAY, yrs = []; for (let y = new Date(x0).getUTCFullYear(); y <= new Date(x1).getUTCFullYear() + 1; y++){ const t = Date.UTC(y, 0, 1); if (t >= x0 && t <= x1) yrs.push({t, label:String(y)}); }
+  for (const t of yrs) g += `<line x1="${X(t.t)}" x2="${X(t.t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t.t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${t.label}</text>`;
+  for (const i of ivs){
+    if (i.rate < 0) continue;
+    const bad = i.flag.high, xa = X(i.t1), wd = Math.max(2, X(i.t2) - xa);
+    g += `<rect x="${xa.toFixed(1)}" y="${Y(i.rate).toFixed(1)}" width="${wd.toFixed(1)}" height="${(H - m.b - Y(i.rate)).toFixed(1)}" fill="${bad ? 'var(--bad)' : 'var(--oil)'}" opacity="${bad ? .75 : .55}" stroke="${bad ? 'var(--bad)' : 'var(--oil)'}" stroke-width="1"/>`;
+  }
+  let md = '', first = true;
+  for (let t = x0; t <= x1; t += 7 * DAY){ md += (first ? 'M' : 'L') + X(t).toFixed(1) + ',' + Y(baseRate(A.S.profile, t) * A.k).toFixed(1); first = false; }
+  g += `<path d="${md}" fill="none" stroke="var(--cold)" stroke-width="2"/><line id="cursor" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" opacity="0"/>`;
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verbrauch pro Tag je Messintervall">${g}</svg><div class="legend"><span><b style="border-color:var(--oil)"></b>gemessen (l/Tag)</span><span><b style="border-color:var(--cold)"></b>Modell</span><span><b style="border-color:var(--bad)"></b>auffällig</span></div>`;
+  setupTip(host, host.querySelector('svg'), m, W, H, x0, x1, t => {
+    const i = ivs.find(v => t >= v.t1 && t <= v.t2); if (!i) return null;
+    return `${fDs(i.t1)} bis ${fDs(i.t2)}<br><b>${f1(i.rate)} l/Tag</b> · ${fN(i.litres)} l`;
+  });
+}
+function drawMonth(){
+  const host = $('#chartMonth'); if (!host) return;
+  const W = Math.max(280, host.clientWidth), H = 200, m = {l:30, r:6, t:14, b:24};
+  const vals = A.S.profile.map((p, i) => p * DIM[i] * A.k);
+  const dots = [];
+  A.segs.forEach(s => { if (s.days >= 14 && s.days <= 70 && s.rate >= 0){ const mid = new Date((s.t1 + s.t2) / 2), mo = mid.getUTCMonth(); dots.push({mo, v:s.rate * DIM[mo]}); } });
+  const ymax = Math.ceil(Math.max(...vals, ...dots.map(d => d.v)) * 1.1 / 100) * 100;
+  const bw = (W - m.l - m.r) / 12, Y = v => m.t + (1 - v / ymax) * (H - m.t - m.b);
+  let g = '';
+  for (let v = 0; v <= ymax; v += 200) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 5}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;
+  vals.forEach((v, i) => {
+    const x = m.l + i * bw;
+    g += `<rect x="${(x + 3).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(bw - 6).toFixed(1)}" height="${(H - m.b - Y(v)).toFixed(1)}" rx="3" fill="var(--oil)" opacity=".8"/>`;
+    g += `<text x="${(x + bw / 2).toFixed(1)}" y="${(Y(v) - 4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink)">${Math.round(v)}</text>`;
+    g += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${MON[i].slice(0, W < 340 ? 1 : 3)}</text>`;
+  });
+  dots.forEach(d => { g += `<circle cx="${(m.l + d.mo * bw + bw / 2).toFixed(1)}" cy="${Y(d.v).toFixed(1)}" r="3.4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/>`; });
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verbrauch pro Monat">${g}</svg>`;
+}
+function drawCharts(){ if (!A || A.empty) return; drawLevel(); drawRate(); drawMonth(); updatePlanText(); }
+function updatePlanText(){
+  const el = $('#plan-res'); if (!el) return;
+  const P = planOf(); el.className = planClass(P); el.innerHTML = planResultHtml(P);
+}
+/* ===== UI: Einstellungen, Ereignisse, Start ===== */
+function renderMore(){
+  const S = state.settings, [em, ed] = S.seasonEnd.split('-').map(Number);
+  const num_ = (k, label, hint, unit) => `<label class="field"><span>${label}</span><input data-s="${k}" inputmode="decimal" value="${S[k]}">${hint ? `<small>${hint}</small>` : ''}</label>`;
+  const json = JSON.stringify({v:1, events:state.events, settings:S}, null, 1);
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+  const install = (!window.claude && !standalone) ? `<section class="card"><h3>Als App installieren</h3><p class="small muted">iPhone: In Safari auf das Teilen-Symbol tippen, dann «Zum Home-Bildschirm». Android: Browsermenü, dann «App installieren». Danach läuft die App im Vollbild und auch ohne Internet.</p>${deferredPrompt ? '<div class="btns"><button class="btn oil sm" data-act="install">Jetzt installieren</button></div>' : ''}</section>` : '';
+  const where = storageMode === 'db' ? 'in deinem Claude-Konto und sind auf allen Geräten verfügbar' : (!window.claude ? 'auf diesem Gerät im Speicher der App. Sichere sie regelmässig, denn beim Löschen der App-Daten gehen sie verloren' : 'nur in diesem Browser. Öffne die App eingeloggt in Claude, damit sie im Konto gespeichert werden');
+  return `<h2 style="margin:0 0 10px">Einstellungen</h2>
+  <section class="card" id="settings"><h3>Bestelltermin</h3>
+    <div class="row2">${num_('thr', 'Schwelle (l)', 'Dieser Stand wird als Termin angezeigt.')}${num_('reserve', 'Reserve (l)', 'Soll am Ende bleiben.')}</div>
+    <div class="row2">${num_('lead', 'Lieferfrist (Tage)', 'Vom Auftrag bis zur Lieferung.')}${num_('buffer', 'Puffer (Tage)', 'Zusätzliche Sicherheit.')}</div>
+    <h3 style="margin-top:8px">Tank und Preis</h3>
+    <div class="row2">${num_('capacity', 'Tankgrösse (l)', '')}${num_('price', 'Preis (CHF/100 l)', 'Nur für die Kostenschätzung.')}</div>
+    <label class="field"><span>Ende der Heizperiode</span><div class="row2"><select data-s="endm">${MON.map((m, i) => `<option value="${i + 1}" ${em === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select><input data-s="endd" inputmode="numeric" value="${ed}"></div><small>Bis dahin wird die Bestellmenge berechnet.</small></label>
+    <h3 style="margin-top:8px">Winter-Szenarien</h3>
+    <div class="row2"><label class="field"><span>Kalter Winter (+ %)</span><input data-s="kaltPct" inputmode="numeric" value="${Math.round((S.kalt - 1) * 100)}"></label>
+    <label class="field"><span>Milder Winter (− %)</span><input data-s="mildPct" inputmode="numeric" value="${Math.round((1 - S.mild) * 100)}"></label></div>
+    <h3 style="margin-top:8px">Verbrauchsfaktor</h3>
+    <div class="row2"><label class="field"><span>Berechnung</span><select data-s="kMode"><option value="auto" ${S.kMode === 'auto' ? 'selected' : ''}>Automatisch (${A && !A.empty ? A.kAuto.toFixed(2) : '–'})</option><option value="manual" ${S.kMode === 'manual' ? 'selected' : ''}>Manuell</option></select></label>
+    <label class="field"><span>Manueller Wert</span><input data-s="kManual" inputmode="decimal" value="${S.kManual}"></label></div>
+    <details><summary>Monatsprofil anpassen (l/Tag)</summary><div class="mgrid">${S.profile.map((v, i) => `<div><label>${MON[i]}</label><input data-p="${i}" inputmode="decimal" value="${v}"></div>`).join('')}</div>
+    <div class="btns"><button class="btn ghost sm" data-act="resetProfile">Standardprofil laden</button></div></details>
+    <label class="field"><span>Darstellung</span><select data-s="theme"><option value="auto" ${S.theme === 'auto' ? 'selected' : ''}>Automatisch</option><option value="light" ${S.theme === 'light' ? 'selected' : ''}>Hell</option><option value="dark" ${S.theme === 'dark' ? 'selected' : ''}>Dunkel</option></select></label>
+  </section>
+  ${install}<section class="card"><h3>Sicherung</h3><p class="small muted">Deine Daten liegen ${where}. Eine Kopie als Text kannst du hier sichern.</p>
+    <textarea id="exp" readonly>${esc(json)}</textarea>
+    <div class="btns"><button class="btn ghost sm" data-act="copy">Kopieren</button><button class="btn ghost sm" data-act="download">Als Datei speichern</button></div>
+    <h3 style="margin-top:16px">Daten importieren</h3><textarea id="imp" placeholder="Gesicherten Text hier einfügen"></textarea>
+    <div class="btns"><button class="btn ghost sm" data-act="import">${ui.importArm ? 'Wirklich ersetzen' : 'Importieren'}</button></div>
+    <p class="hint" style="margin-top:6px">Der Import ersetzt alle vorhandenen Einträge.</p></section>
+  <section class="card"><h3>Alle Daten löschen</h3><p class="small muted">Entfernt alle Einträge und Einstellungen.</p>
+    <div class="btns"><button class="btn ${ui.resetArm ? 'bad' : 'ghost'} sm" data-act="reset">${ui.resetArm ? 'Ja, alles löschen' : 'Daten löschen'}</button></div></section>`;
+}
+
+/* ---- Sheet (Eintrag bearbeiten) ---- */
+function openSheet(id){
+  const e = state.events.find(x => x.id === id); if (!e) return;
+  ui.sheet = id; ui.delArm = false; ui.confirmKey = null;
+  const sh = $('#sheet');
+  sh.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="Eintrag bearbeiten"><h2>${e.type === 'read' ? 'Ölstand ändern' : 'Lieferung ändern'}</h2>
+    <div id="xForm">${formHtml('x', e.type, e.type === 'read' ? {date:e.date, level:e.level} : {date:e.date, before:e.before, vol:e.vol, after:e.after})}</div>
+    <button class="btn oil" id="xSave">Änderung speichern</button>
+    <div class="btns"><button class="btn ghost" id="xCancel">Abbrechen</button><button class="btn ghost" id="xDel">Löschen</button></div></div>`;
+  sh.classList.add('open');
+  wireForm('x', e.type, id, () => { const b = $('#xSave'); if (b) b.textContent = 'Änderung speichern'; });
+}
+function closeSheet(){ ui.sheet = null; $('#sheet').classList.remove('open'); $('#sheet').innerHTML = ''; }
+
+/* ---- Rendering ---- */
+function render(){
+  TODAY = D.today();
+  A = analyze(state.events, state.settings, TODAY);
+  applyTheme();
+  $$('.bottom button').forEach(b => b.getAttribute('data-tab') === ui.tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  const main = $('#main');
+  main.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'add' ? renderAdd() : ui.tab === 'log' ? renderLog() : ui.tab === 'analysis' ? renderAnalysis() : renderMore();
+  if (ui.tab === 'add'){
+    const base = ui.addMode === 'read' ? 'Ölstand speichern' : 'Lieferung speichern';
+    wireForm('a', ui.addMode, null, () => { const b = $('#addSave'); if (b) b.textContent = base; });
+  }
+  renderChip();
+  requestAnimationFrame(drawCharts);
+}
+function go(tab){ ui.tab = tab; ui.resetArm = false; ui.importArm = false; render(); window.scrollTo(0, 0); }
+
+/* ---- Aktionen ---- */
+function onAddSave(){
+  const r = collect('a', ui.addMode);
+  if (r.err){ toast(r.err); return; }
+  const key = JSON.stringify(r.ev);
+  if (r.warn && ui.confirmKey !== key){ ui.confirmKey = key; $('#addSave').textContent = 'Trotzdem speichern'; toast('Bitte den Hinweis prüfen und nochmals tippen.'); return; }
+  addEvent(r.ev); ui.confirmKey = null; ui.planVol = null; ui.planDate = null;
+  toast(ui.addMode === 'read' ? 'Ölstand gespeichert' : 'Lieferung gespeichert'); go('home');
+}
+function onSheetSave(){
+  const e = state.events.find(x => x.id === ui.sheet); if (!e) return;
+  const r = collect('x', e.type);
+  if (r.err){ toast(r.err); return; }
+  const key = JSON.stringify(r.ev);
+  if (r.warn && ui.confirmKey !== key){ ui.confirmKey = key; $('#xSave').textContent = 'Trotzdem speichern'; toast('Bitte den Hinweis prüfen und nochmals tippen.'); return; }
+  updateEvent(e.id, r.ev); closeSheet(); ui.planVol = null; ui.planDate = null; toast('Änderung gespeichert'); render();
+}
+function onSheetDelete(){
+  if (!ui.delArm){ ui.delArm = true; const b = $('#xDel'); b.textContent = 'Wirklich löschen'; b.classList.remove('ghost'); b.classList.add('bad'); return; }
+  deleteEvent(ui.sheet); closeSheet(); ui.planVol = null; ui.planDate = null; toast('Eintrag gelöscht'); render();
+}
+function onSetting(t){
+  const S = state.settings, k = t.dataset.s;
+  if (t.dataset.p != null){ const v = num(t.value); if (v != null && v >= 0) S.profile[+t.dataset.p] = v; }
+  else if (['thr', 'reserve', 'lead', 'buffer', 'capacity', 'price'].includes(k)){ const v = num(t.value); if (v != null && v >= 0) S[k] = v; }
+  else if (k === 'kaltPct'){ const v = num(t.value); if (v != null && v >= 0 && v <= 100) S.kalt = 1 + v / 100; }
+  else if (k === 'mildPct'){ const v = num(t.value); if (v != null && v >= 0 && v <= 60) S.mild = 1 - v / 100; }
+  else if (k === 'kManual'){ const v = num(t.value); if (v != null && v > 0 && v < 5) S.kManual = v; }
+  else if (k === 'kMode' || k === 'theme'){ S[k] = t.value; if (k === 'kMode' && t.value === 'manual' && A && !A.empty && S.kManual === 1) S.kManual = Math.round(A.kAuto * 100) / 100; }
+  else if (k === 'endm' || k === 'endd'){
+    let [m, d] = S.seasonEnd.split('-').map(Number);
+    if (k === 'endm') m = +t.value; else { const v = num(t.value); if (v != null) d = Math.max(1, Math.min(31, Math.round(v))); }
+    S.seasonEnd = pad(m) + '-' + pad(d);
+  } else return;
+  persist(); ui.planVol = null; ui.planDate = null; render();
+}
+async function onAct(act){
+  if (act === 'copy'){
+    const ta = $('#exp');
+    try { await navigator.clipboard.writeText(ta.value); toast('Kopiert'); }
+    catch(e){ ta.select(); try { document.execCommand('copy'); toast('Kopiert'); } catch(e2){ toast('Bitte den Text markieren und kopieren.'); } }
+  } else if (act === 'download'){
+    try {
+      const dl = window.claude && claude.use ? await claude.use('downloads') : null;
+      if (dl){ await dl.save({filename:'heizoel-daten.json', data:$('#exp').value}); toast('Datei gespeichert'); }
+      else { const url = URL.createObjectURL(new Blob([$('#exp').value], {type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = 'heizoel-daten.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Datei wird gespeichert'); }
+    } catch(e){ toast('Speichern abgebrochen. Bitte kopieren.'); }
+  } else if (act === 'install'){
+    if (deferredPrompt){ deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch(e){} deferredPrompt = null; render(); }
+  } else if (act === 'import'){
+    let d; try { d = JSON.parse($('#imp').value); } catch(e){ toast('Der Text ist kein gültiges Backup.'); return; }
+    if (!d || !Array.isArray(d.events)){ toast('Im Backup fehlen die Einträge.'); return; }
+    if (!ui.importArm){ ui.importArm = true; $('[data-act="import"]').textContent = 'Wirklich ersetzen'; toast(d.events.length + ' Einträge gefunden. Nochmals tippen zum Ersetzen.'); return; }
+    state = normalize(d); persist(); ui.importArm = false; ui.planVol = null; ui.planDate = null; toast('Daten importiert'); render();
+  } else if (act === 'reset'){
+    if (!ui.resetArm){ ui.resetArm = true; render(); return; }
+    state = normalize({events:[], settings:{}}); persist(); ui.resetArm = false; ui.planVol = null; ui.planDate = null; toast('Alle Daten gelöscht'); render();
+  } else if (act === 'resetProfile'){ state.settings.profile = PRIOR.slice(); persist(); render(); }
+}
+
+/* ---- Ereignisse ---- */
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('button, li[data-id]'); if (!t) return;
+  if (t.dataset.tab) return go(t.dataset.tab);
+  if (t.dataset.go) return go(t.dataset.go);
+  if (t.dataset.mode){ ui.addMode = t.dataset.mode; ui.confirmKey = null; return render(); }
+  if (t.dataset.range){ ui.range = t.dataset.range; $$('#rangeChips button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === ui.range)); return drawLevel(); }
+  if (t.dataset.act) return onAct(t.dataset.act);
+  if (t.id === 'addSave') return onAddSave();
+  if (t.id === 'xSave') return onSheetSave();
+  if (t.id === 'xCancel') return closeSheet();
+  if (t.id === 'xDel') return onSheetDelete();
+  if (t.matches('li[data-id]')) return openSheet(t.dataset.id);
+});
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+$('#main').addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'plan-vol'){ const v = num(t.value); ui.planVol = v == null ? 0 : Math.max(0, Math.round(v)); drawLevel(); updatePlanText(); }
+  else if (t.id === 'plan-date'){ ui.planDate = t.value || null; drawLevel(); updatePlanText(); }
+});
+$('#main').addEventListener('change', e => { if (e.target.closest('#settings')) onSetting(e.target); });
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (ui.tab === 'more') render(); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawCharts, 150); });
+
+/* ---- Start ---- */
+const loc = loadLocal() || window.HEIZOEL_SEED || null; if (loc){ state = normalize(loc); saveLocal(); }
+render();
+initDb();
+})();
+</script><script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:'){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+if (navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
+</script></body></html>
