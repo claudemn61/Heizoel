@@ -116,6 +116,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,monospace}
 .log .t{font-weight:650}.log .v{font-weight:650;text-align:right}
 .log .m{grid-column:2/4;font-size:13px;color:var(--muted)}
 .log .m.flag{color:var(--bad)} .log .m.soft{color:var(--warn)}
+.log .m.note{font-style:italic}
 .cyc{width:100%;border-collapse:collapse;font-size:13px}
 .cyc th,.cyc td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
 .cyc th:first-child,.cyc td:first-child{text-align:left}
@@ -334,9 +335,14 @@ let dbDoc = null, storageMode = 'local', saveState = 'ok', A = null, deferredPro
 function normalize(d){
   const s = Object.assign({}, DEFAULTS, {theme:'auto'}, (d && d.settings) || {});
   if (!Array.isArray(s.profile) || s.profile.length !== 12) s.profile = PRIOR.slice();
-  const evs = ((d && d.events) || []).filter(e => e && e.date && (e.type === 'read' || e.type === 'fill')).map(e => e.type === 'read'
-    ? {id:e.id || uid(), type:'read', date:e.date, level:Number(e.level)}
-    : {id:e.id || uid(), type:'fill', date:e.date, before:e.before == null ? null : Number(e.before), after:Number(e.after), vol:e.vol == null ? null : Number(e.vol)});
+  const evs = ((d && d.events) || []).filter(e => e && e.date && (e.type === 'read' || e.type === 'fill')).map(e => {
+    const o = e.type === 'read'
+      ? {id:e.id || uid(), type:'read', date:e.date, level:Number(e.level)}
+      : {id:e.id || uid(), type:'fill', date:e.date, before:e.before == null ? null : Number(e.before), after:Number(e.after), vol:e.vol == null ? null : Number(e.vol)};
+    // Begründung einer Korrektur (optional, nur im Bearbeiten-Fenster erfassbar)
+    if (typeof e.note === 'string' && e.note.trim()) o.note = e.note.trim();
+    return o;
+  });
   return {v:1, events:evs, settings:s};
 }
 function loadLocal(){ try { const s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch(e){} return null; }
@@ -601,7 +607,7 @@ function renderLog(){
     }
     return `<li data-id="${e.id}"><span class="ic ${e.type}">${e.type === 'fill' ? ICON.truck : ICON.drop}</span>
       <span class="t">${fD(D.parse(e.date))}${e.type === 'fill' ? ' · Lieferung' : ''}</span><span class="v">${e.type === 'read' ? fN(e.level) + ' l' : '→ ' + fN(e.after) + ' l'}</span>
-      <span class="m ${cls}">${esc(meta)}</span></li>`;
+      <span class="m ${cls}">${esc(meta)}</span>${e.note ? `<span class="m note">Korrigiert: ${esc(e.note)}</span>` : ''}</li>`;
   }).join('');
   return `<h2 style="margin:0 0 10px">Verlauf</h2><ul class="log">${items}</ul><p class="muted small">Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen.</p>`;
 }
@@ -874,6 +880,7 @@ function openSheet(id){
   const sh = $('#sheet');
   sh.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="Eintrag bearbeiten"><h2>${e.type === 'read' ? 'Ölstand ändern' : 'Lieferung ändern'}</h2>
     <div id="xForm">${formHtml('x', e.type, e.type === 'read' ? {date:e.date, level:e.level} : {date:e.date, before:e.before, vol:e.vol, after:e.after})}</div>
+    <label class="field"><span>Begründung der Korrektur</span><input type="text" id="x-note" value="${esc(e.note || '')}" placeholder="z. B. Ablesefehler, 1000 l zu hoch abgelesen" autocomplete="off"><small>Optional, erscheint im Verlauf.</small></label>
     <button class="btn oil" id="xSave">Änderung speichern</button>
     <div class="btns"><button class="btn ghost" id="xCancel">Abbrechen</button><button class="btn ghost" id="xDel">Löschen</button></div></div>`;
   sh.classList.add('open');
@@ -913,6 +920,7 @@ function onSheetSave(){
   if (r.err){ toast(r.err); return; }
   const key = JSON.stringify(r.ev);
   if (r.warn && ui.confirmKey !== key){ ui.confirmKey = key; $('#xSave').textContent = 'Trotzdem speichern'; toast('Bitte den Hinweis prüfen und nochmals tippen.'); return; }
+  const note = ($('#x-note').value || '').trim(); if (note) r.ev.note = note;
   updateEvent(e.id, r.ev); closeSheet(); ui.planVol = null; ui.planDate = null; toast('Änderung gespeichert'); render();
 }
 function onSheetDelete(){

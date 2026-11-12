@@ -26,7 +26,8 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
   wird zusätzlich über `claude.use('db')` ins Konto synchronisiert
   (`initDb`/`pushDb`, Dokument `data/users/<id>/heizoel`).
 - Ereignisse: `type:'read'` (`date`, `level`) und `type:'fill'` (`date`,
-  `before`, `vol`, `after`). `normalize()` ist die einzige Stelle, die
+  `before`, `vol`, `after`), beide optional mit `note` (Begründung einer
+  Korrektur, nur im Bearbeiten-Fenster erfassbar, im Verlauf angezeigt). `normalize()` ist die einzige Stelle, die
   geladene/importierte Daten bereinigt — neue Felder dort ergänzen, sonst gehen
   sie beim Laden/Import verloren.
 - Backup (analog Flugbuch), Tab «Mehr»: «Backup sichern» (`onAct('download')`)
