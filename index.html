@@ -409,11 +409,13 @@ function planOf(){
   if (!vol || vol <= 0) return null;
   let dt = ui.planDate ? D.parse(ui.planDate) : Math.max(TODAY, A.recommended != null ? A.recommended : TODAY) + A.S.lead * DAY;
   dt = Math.max(dt, TODAY, A.t0);
-  const until = Math.max(A.T + 60*DAY, dt + 30*DAY);
+  // Bezugsdatum: Ende der Heizperiode nach der Lieferung (liegt die Lieferung nach A.T, die folgende Heizperiode)
+  const T = dt < A.T ? A.T : seasonEndAfter(dt, A.S.seasonEnd);
+  const until = Math.max(T + 60*DAY, dt + 30*DAY);
   const mk = m => simulate(A.t0, A.L0, {mult:A.k*m, profile:A.S.profile, delivery:{t:dt, vol, cap:A.S.capacity}, until});
   const normal = mk(1), mild = mk(A.S.mild), kalt = mk(A.S.kalt);
   const atDel = levelAt(A.normal, dt);
-  return {vol, dt, normal, mild, kalt, atDel, endN:levelAt(normal, A.T), endK:levelAt(kalt, A.T), over: atDel + vol > A.S.capacity};
+  return {vol, dt, normal, mild, kalt, atDel, T, endN:levelAt(normal, T), endK:levelAt(kalt, T), over: atDel + vol > A.S.capacity};
 }
 function status(){
   if (!A || A.empty || A.recommended == null) return {k:'ok', label:'Noch Zeit'};
@@ -491,7 +493,7 @@ function renderHome(){
 }
 function planResultHtml(P){
   if (!P) return `Ohne Lieferung ist der Tank am ${A.c.empty.normal ? fD(A.c.empty.normal) : '–'} leer (kalter Winter: ${A.c.empty.kalt ? fD(A.c.empty.kalt) : '–'}).`;
-  let h = `Mit ${fN(P.vol)} l am ${fD(P.dt)}: Stand am ${fD(A.T)} ≈ <b>${fN(P.endN)} l</b>, bei kaltem Winter ≈ <b>${fN(P.endK)} l</b>.`;
+  let h = `Mit ${fN(P.vol)} l am ${fD(P.dt)}: Stand am ${fD(P.T)} ≈ <b>${fN(P.endN)} l</b>, bei kaltem Winter ≈ <b>${fN(P.endK)} l</b>.`;
   if (P.atDel <= 0) h += ' Achtung: Bis zu diesem Datum ist der Tank leer.';
   if (P.over) h += ` Der Tank fasst ${fN(A.S.capacity)} l, es passen nur ${fN(Math.max(0, A.S.capacity - P.atDel))} l.`;
   return h;
@@ -757,7 +759,7 @@ function drawLevel(){
   const lastFill = [...A.pts].reverse().find(p => p.kind === 'post');
   const bx0 = ui.range === 'all' ? A.pts[0].t : Math.min(lastFill ? lastFill.t - 10 * DAY : A.pts[0].t, TODAY - 100 * DAY);
   const endNo = A.c.empty.mild || (TODAY + 300 * DAY);
-  const bx1 = Math.max(TODAY + 150 * DAY, (P ? A.T + 25 * DAY : endNo + 20 * DAY));
+  const bx1 = Math.max(TODAY + 150 * DAY, (P ? Math.max(A.T, P.T) + 25 * DAY : endNo + 20 * DAY));
   let maxL = Math.max(...A.pts.filter(p => p.t >= bx0).map(p => p.level), A.L0);
   if (P) maxL = Math.max(maxL, ...P.normal.filter(p => p.t <= bx1).map(p => p.level));
   const ymax = Math.min(Math.ceil(S.capacity / 1000) * 1000, Math.max(3000, Math.ceil(maxL / 1000) * 1000));
