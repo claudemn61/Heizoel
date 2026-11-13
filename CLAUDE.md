@@ -61,18 +61,22 @@ Weitere Dateien: `sw.js` (Service Worker), `manifest.webmanifest`,
 
 ## Service Worker / Cache
 
-- `sw.js` liefert eigene Dateien **cache-first mit Hintergrund-Aktualisierung**.
-  Ohne Änderung an `VER` sehen Nutzer eine neue Version erst beim zweiten Laden.
-- Deshalb bei **jeder ausgelieferten Änderung** `VER` in `sw.js` erhöhen
-  (`heizoel-v1` → `heizoel-v2` …). Neue Dateien zusätzlich in `SHELL` eintragen.
+- `sw.js` lädt die Seite **zuerst aus dem Netz** (offline aus dem Cache), übrige
+  Dateien aus dem Cache mit Hintergrund-Aktualisierung.
+- Die Cache-Version `VER` ist **nicht** von Hand zu pflegen: `index.html`
+  registriert `sw.js?v=APP_VERSION`, `sw.js` liest daraus `VER`. Neue Dateien
+  in `SHELL` eintragen.
 
 ## Versionierung
 
 - **Patch** = Bugfix, **Minor** = neues Feature, **Major** = Architekturänderung.
 - **Vor jeder Code-Änderung fragen**, welche Stufe zutrifft (ausser ich sage explizit
   "nichts"/"keine Version"/"V-").
-- Aktuell gibt es noch kein `APP_VERSION` und keinen Changelog in der App —
-  einzige Versionsmarke ist `VER` in `sw.js` (siehe oben).
+- **Jede Stufe (auch Patch)** erhöht `APP_VERSION` + eigenen Eintrag zuoberst im
+  `CHANGELOG`-Array (Form `{ version, changes: [...] }`), beide am Anfang des
+  ersten Script-Blocks in `index.html`. Angezeigt unten im Tab «Mehr».
+- Keine separate Anleitung (wie `hilfe.jsx` in Tauchbuch) — bei Minor entfällt
+  das Nachführen einer Hilfe.
 
 ## Git-Workflow
 

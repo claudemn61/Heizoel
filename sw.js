@@ -1,5 +1,6 @@
-// Cache-Version: bei jeder ausgelieferten Änderung erhöhen
-const VER = 'heizoel-v5';
+// Cache-Version = App-Version, kommt aus der Registrierung (sw.js?v=APP_VERSION in index.html).
+// Eine neue APP_VERSION ergibt eine neue Script-URL, damit installiert sich der Service Worker neu.
+const VER = 'heizoel-' + (new URL(self.location).searchParams.get('v') || '0');
 const FONTS = 'heizoel-fonts';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
