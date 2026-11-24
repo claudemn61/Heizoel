@@ -46,7 +46,7 @@ p{margin:0 0 8px}
 .muted{color:var(--muted)}
 .small{font-size:13px}
 .wrap{max-width:600px;margin:0 auto;padding:14px 16px 104px}
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 14px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 12px;margin:4px 0 14px}
 .top .sub{font-size:13px;color:var(--muted);margin-top:3px}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface);white-space:nowrap}
 .chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
@@ -101,7 +101,7 @@ input[readonly]{opacity:.75}
 textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,monospace}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn{font:inherit;font-weight:650;border:0;border-radius:12px;min-height:48px;padding:0 18px;cursor:pointer;background:var(--ink);color:var(--paper);width:100%}
-.btn.oil{background:var(--oil);color:#201300}
+.btn.oil{background:var(--oil);color:var(--on-oil,#201300)}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn.bad{background:var(--bad);color:#fff}
 .btn.sm{min-height:38px;width:auto;padding:0 14px;font-size:14px}
@@ -132,7 +132,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,monospace}
 .bottom button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bottom button[aria-current="page"]{color:var(--ink)}
 .bottom button[aria-current="page"] svg{stroke:var(--oil);stroke-width:2.2}
-.bottom .add svg{background:var(--oil);stroke:#201300;border-radius:10px;padding:2px;width:30px;height:30px}
+.bottom .add svg{background:var(--oil);stroke:var(--on-oil,#201300);border-radius:10px;padding:2px;width:30px;height:30px}
 .sheet{position:fixed;inset:0;background:rgba(10,20,24,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
 .sheet.open{display:flex}
 .sheet .panel{background:var(--surface);width:100%;max-width:600px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto}
@@ -145,11 +145,18 @@ summary{cursor:pointer;font-weight:600}
 .mgrid input{padding:8px;min-height:40px}
 .hint{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border-radius:14px;padding:4px;margin:0 0 14px}
+.mods button{font:inherit;font-weight:650;font-size:14px;border:0;border-radius:10px;min-height:42px;background:transparent;color:var(--muted);cursor:pointer}
+.mods button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+body.mod-salt{--oil:#2B6D8C;--oil-ink:#1B4A61;--oil-soft:#D8E9F2;--on-oil:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.mod-salt{--oil:#63B2D4;--oil-ink:#A9D8EC;--oil-soft:#16384A;--on-oil:#0E1A1E}}
+:root[data-theme="dark"] body.mod-salt{--oil:#63B2D4;--oil-ink:#A9D8EC;--oil-soft:#16384A;--on-oil:#0E1A1E}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><div><h1>Heizöltank</h1><div class="sub">Füllstand, Verbrauch und Bestelltermin</div></div><div class="meta"><span id="chip" class="chip loc"><i></i>Nur in diesem Browser</span><span id="bak" class="bak"></span></div></header>
+  <header class="top"><div><h1 id="ttl">Heizöltank</h1><div class="sub" id="sub">Füllstand, Verbrauch und Bestelltermin</div></div><div class="meta"><span id="chip" class="chip loc"><i></i>Nur in diesem Browser</span><span id="bak" class="bak"></span></div></header>
+  <div class="mods" role="group" aria-label="Bereich"><button data-mod="oil" aria-pressed="true">Heizöl</button><button data-mod="salt" aria-pressed="false">Salz</button></div>
   <main id="main"></main>
 </div>
 <div class="bottom"><nav aria-label="Hauptnavigation">
@@ -166,8 +173,14 @@ summary{cursor:pointer;font-weight:600}
    Patch = Bugfix, Minor = neues Feature, Major = Architekturänderung.
    Jede Stufe: APP_VERSION erhöhen + neuer Eintrag zuoberst in CHANGELOG.
    APP_VERSION steuert auch den Cache des Service Workers (sw.js?v=…). */
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const CHANGELOG = [
+  { version:'1.1.0', changes:[
+    'Neuer Bereich «Regeneriersalz» für die Wasseranlage: oben zwischen «Heizöl» und «Salz» umschalten.',
+    'Nachfüllungen mit Datum, Anzahl Säcke und kg pro Sack erfassen (Sackgrösse frei wählbar), Verlauf mit Bearbeiten und Löschen.',
+    'Übersicht mit Ø Verbrauch pro Monat, Abstand der Nachfüllungen und nächstem Nachfülltermin; Analyse mit Monatswerten, typischem Jahresverlauf und Jahrestabelle.',
+    'Das Backup enthält jetzt auch die Salz-Daten; ältere Backups ohne Salz lassen die vorhandenen Salz-Daten unverändert.'
+  ]},
   { version:'1.0.0', changes:[
     'Erste nummerierte Version.',
     'Backup als komprimierte Datei über das Teilen-Menü, Import mit Bestätigung, Hinweis bei Änderungen seit dem letzten Backup.',
@@ -332,6 +345,67 @@ function analyze(events, settings, today){
   return {S, pts, intervals, segs, kAuto, k, t0, L0, normal, mild, kalt, estNow, c, deadline, recommended, T,
           qtyMin: up(needN), qtySafe: up(needK), horizon};
 }
+
+/* ===== Regeneriersalz ===== */
+/* Es gibt nur Nachfüllungen (kein Füllstand). Annahme: Jede Nachfüllung ersetzt, was seit der vorherigen
+   verbraucht wurde. Diese Menge wird gleichmässig auf die Tage dazwischen verteilt. */
+function saltAnalyze(events, today){
+  const evs = (events || []).filter(e => e && e.date && e.kg > 0).slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  if (!evs.length) return {empty:true, n:0};
+  const rows = [];
+  for (const e of evs){
+    const t = D.parse(e.date), l = rows[rows.length - 1];
+    if (l && l.t === t){ l.kg += e.kg; l.bags += e.bags || 0; l.evs.push(e); }
+    else rows.push({t, kg:e.kg, bags:e.bags || 0, evs:[e]});
+  }
+  const intervals = [];
+  for (let i = 1; i < rows.length; i++){
+    const t1 = rows[i-1].t, t2 = rows[i].t, days = (t2 - t1) / DAY;
+    intervals.push({t1, t2, days, kg:rows[i].kg, perMonth:rows[i].kg / days * 30.4375, short:days < 7, ids:rows[i].evs.map(e => e.id)});
+  }
+  const first = rows[0], last = rows[rows.length - 1];
+  const kgBetween = (a, b) => {
+    let s = 0;
+    for (const iv of intervals){ const lo = Math.max(a, iv.t1), hi = Math.min(b, iv.t2); if (hi > lo) s += iv.kg * (hi - lo) / (iv.t2 - iv.t1); }
+    return s;
+  };
+  /* Ganze Kalendermonate zwischen erster und letzter Nachfüllung */
+  const months = [];
+  if (intervals.length){
+    let y = new Date(first.t).getUTCFullYear(), m = new Date(first.t).getUTCMonth();
+    if (Date.UTC(y, m, 1) < first.t){ m++; if (m > 11){ m = 0; y++; } }
+    for (;;){
+      const ms = Date.UTC(y, m, 1), me = Date.UTC(y, m + 1, 1);
+      if (me > last.t) break;
+      months.push({y, m, t:ms, kg:kgBetween(ms, me)});
+      m++; if (m > 11){ m = 0; y++; }
+    }
+  }
+  const byMonth = Array.from({length:12}, () => ({vals:[], avg:null, min:null, max:null}));
+  months.forEach(x => byMonth[x.m].vals.push({y:x.y, kg:x.kg}));
+  byMonth.forEach(b => { if (b.vals.length){ const k = b.vals.map(v => v.kg); b.avg = k.reduce((a, c) => a + c, 0) / k.length; b.min = Math.min(...k); b.max = Math.max(...k); } });
+  /* Ø pro Monat der letzten 12 Monate bis zur letzten Nachfüllung */
+  let avg12 = null;
+  if (intervals.length){
+    const start = Math.max(first.t, last.t - 365 * DAY), days = (last.t - start) / DAY;
+    if (days > 0) avg12 = {perMonth:kgBetween(start, last.t) / days * 30.4375, days};
+  }
+  const years = {};
+  for (const e of evs){ const y = new Date(D.parse(e.date)).getUTCFullYear(); const o = years[y] || (years[y] = {y, n:0, bags:0, kg:0}); o.n++; o.bags += e.bags || 0; o.kg += e.kg; }
+  let forecast = null;
+  if (intervals.length){
+    let rec = intervals.slice(-3); const ok = rec.filter(i => !i.short); if (ok.length) rec = ok;
+    const ds = rec.map(i => i.days), mean = ds.reduce((a, c) => a + c, 0) / ds.length;
+    forecast = {days:Math.round(mean), lo:Math.min(...ds), hi:Math.max(...ds), n:rec.length, next:last.t + Math.round(mean) * DAY};
+  }
+  return {
+    n:evs.length, rows, intervals, first, last, months, byMonth, avg12, forecast,
+    years:Object.values(years).sort((a, b) => b.y - a.y),
+    avgInterval:intervals.length ? intervals.reduce((s, i) => s + i.days, 0) / intervals.length : null,
+    avgAmount:evs.reduce((s, e) => s + e.kg, 0) / evs.length,
+    lastEv:last.evs[last.evs.length - 1]
+  };
+}
 </script><script>
 /* ===== UI: Zustand, Speicher, Hilfsfunktionen ===== */
 (function(){
@@ -349,11 +423,23 @@ const uid = () => 'e' + Date.now().toString(36) + Math.random().toString(36).sli
 let TODAY = D.today();
 const rel = t => { const d = Math.round((t - TODAY) / DAY); if (d === 0) return 'heute'; if (d === 1) return 'morgen'; if (d === -1) return 'gestern'; return d > 0 ? 'in ' + d + ' Tagen' : 'vor ' + (-d) + ' Tagen'; };
 
-let state = { v:1, events:[], settings:Object.assign({}, DEFAULTS, {theme:'auto'}) };
-const ui = { tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importData:null, zoom:null };
+let state = { v:1, events:[], settings:Object.assign({}, DEFAULTS, {theme:'auto'}), salt:{events:[], settings:{bagKg:25}} };
+const ui = { mod:'oil', sheetMod:null, tab:'home', range:'cycle', addMode:'read', planVol:null, planDate:null, confirmKey:null, sheet:null, delArm:false, resetArm:false, importData:null, zoom:null };
+try { if (localStorage.getItem('heizoel-tracker-mod') === 'salt') ui.mod = 'salt'; } catch(e){}
 const LS_KEY = 'heizoel-tracker-v1';
 let dbDoc = null, storageMode = 'local', saveState = 'ok', A = null, deferredPrompt = null;
 
+function normalizeSalt(d){
+  const sd = (d && d.salt) || {};
+  const evs = (Array.isArray(sd.events) ? sd.events : []).filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date))).map(e => {
+    const bags = Number(e.bags), bagKg = Number(e.bagKg), kg = e.kg != null ? Number(e.kg) : bags * bagKg;
+    return {id:e.id || uid(), date:String(e.date), bags:isFinite(bags) ? bags : 1, bagKg:isFinite(bagKg) ? bagKg : kg, kg:Math.round(kg * 10) / 10, note:e.note ? String(e.note).slice(0, 120) : ''};
+  }).filter(e => isFinite(e.kg) && e.kg > 0);
+  const st = Object.assign({bagKg:25}, sd.settings || {});
+  if (!(Number(st.bagKg) > 0)) st.bagKg = 25;
+  st.bagKg = Number(st.bagKg);
+  return {events:evs, settings:{bagKg:st.bagKg}};
+}
 function normalize(d){
   const s = Object.assign({}, DEFAULTS, {theme:'auto'}, (d && d.settings) || {});
   if (!Array.isArray(s.profile) || s.profile.length !== 12) s.profile = PRIOR.slice();
@@ -365,7 +451,7 @@ function normalize(d){
     if (typeof e.note === 'string' && e.note.trim()) o.note = e.note.trim();
     return o;
   });
-  return {v:1, events:evs, settings:s};
+  return {v:1, events:evs, settings:s, salt:normalizeSalt(d)};
 }
 function loadLocal(){ try { const s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch(e){} return null; }
 function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
@@ -880,23 +966,288 @@ function drawMonth(){
   dots.forEach(d => { g += `<circle cx="${(m.l + d.mo * bw + bw / 2).toFixed(1)}" cy="${Y(d.v).toFixed(1)}" r="3.4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/>`; });
   host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verbrauch pro Monat">${g}</svg>`;
 }
-function drawCharts(){ if (!A || A.empty) return; drawLevel(); drawRate(); drawMonth(); updatePlanText(); }
+function drawCharts(){ if (ui.mod === 'salt'){ drawSaltCharts(); return; } if (!A || A.empty) return; drawLevel(); drawRate(); drawMonth(); updatePlanText(); }
 function updatePlanText(){
   const el = $('#plan-res'); if (!el) return;
   const P = planOf(); el.className = planClass(P); el.innerHTML = planResultHtml(P);
+}
+/* ===== UI: Salz ===== */
+let SA = null;
+const fK = n => Math.abs(n - Math.round(n)) < 0.05 ? fN(n) : f1(n);
+const r1 = n => Math.round(n * 10) / 10;
+const ICON_SALT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1.2 4L19 10v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-9l1.8-3z"/><path d="M8.5 7h7"/></svg>';
+const sortedSalt = () => state.salt.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+const saltBagsText = e => `${fK(e.bags)} ${e.bags === 1 ? 'Sack' : 'Säcke'} × ${fK(e.bagKg)} kg`;
+const saltEvText = e => `${saltBagsText(e)} = ${fK(e.kg)} kg`;
+const saltRowText = row => row.evs.length === 1 ? saltEvText(row.evs[0]) : `${row.evs.length} Nachfüllungen = ${fK(row.kg)} kg`;
+
+function addSaltEvent(e){ e.id = uid(); state.salt.events.push(e); persist(); }
+function updateSaltEvent(id, e){ const i = state.salt.events.findIndex(x => x.id === id); if (i >= 0){ state.salt.events[i] = Object.assign({id}, e); persist(); } }
+function deleteSaltEvent(id){ state.salt.events = state.salt.events.filter(x => x.id !== id); persist(); }
+
+function setMod(m){
+  if (m !== 'oil' && m !== 'salt') return;
+  ui.mod = m; ui.confirmKey = null; ui.resetArm = false; ui.importData = null; ui.zoom = null;
+  try { localStorage.setItem('heizoel-tracker-mod', m); } catch(e){}
+  render(); window.scrollTo(0, 0);
+}
+function moduleChrome(){
+  const salt = ui.mod === 'salt';
+  document.body.classList.toggle('mod-salt', salt);
+  $$('.mods button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mod === ui.mod ? 'true' : 'false'));
+  $('#ttl').textContent = salt ? 'Regeneriersalz' : 'Heizöltank';
+  $('#sub').textContent = salt ? 'Nachfüllungen und Verbrauch' : 'Füllstand, Verbrauch und Bestelltermin';
+}
+
+/* ---- Übersicht ---- */
+function saltEmpty(){
+  return `<section class="card empty"><h2>Noch keine Nachfüllung</h2><p class="muted">Erfasse die erste Nachfüllung mit Datum und Anzahl Säcke. Ab der zweiten berechnet die App Verbrauch und Rhythmus.</p><button class="btn oil" data-go="add" style="max-width:260px">Erste Nachfüllung erfassen</button></section>`;
+}
+function saltNext(sa){
+  if (!sa.forecast) return `<section class="card"><h2>Nächste Nachfüllung</h2><p class="muted">Ab der zweiten Nachfüllung berechnet die App deinen Rhythmus und den nächsten Termin.</p></section>`;
+  const f = sa.forecast, d = Math.round((f.next - TODAY) / DAY);
+  const k = d < -14 ? 'late' : d <= 0 ? 'now' : d <= 7 ? 'soon' : 'ok';
+  const label = {ok:'Noch Zeit', soon:'Bald fällig', now:'Jetzt fällig', late:'Überfällig? Salzstand prüfen'}[k];
+  const spread = f.lo !== f.hi ? ` Die letzten ${f.n} Abstände lagen zwischen ${f.lo} und ${f.hi} Tagen.` : '';
+  return `<section class="card order ${k}"><span class="pill ${k}">${label}</span>
+    <h2>Nächste Nachfüllung ca. ${fD(f.next)}</h2>
+    <p class="muted">${rel(f.next)} · Rhythmus: Ø ${f.days} Tage.${spread}</p>
+    <p class="small muted">Die App kennt den Füllstand im Behälter nicht. Schau kurz nach, bevor du Salz besorgst. Bewässerung und Wasserverbrauch verschieben den Rhythmus.</p></section>`;
+}
+function renderSaltHome(){
+  const sa = SA;
+  if (sa.empty) return saltEmpty();
+  const since = Math.round((TODAY - sa.last.t) / DAY), bag = state.salt.settings.bagKg;
+  const big = since < 0 ? `<div class="big num" style="font-size:30px">${rel(sa.last.t)}</div>` : since === 0 ? '<div class="big num">Heute</div>' : `<div class="big num">${since}<span>${since === 1 ? 'Tag' : 'Tage'}</span></div>`;
+  const hero = `<section class="card"><div class="muted small">${since > 0 ? 'Seit der letzten Nachfüllung' : 'Letzte Nachfüllung'}</div>${big}<div class="small muted">${fD(sa.last.t)} · ${saltRowText(sa.last)}</div></section>`;
+  const kv = [];
+  if (sa.avg12){
+    kv.push(['Ø Verbrauch pro Monat', `≈ ${fN(sa.avg12.perMonth)} kg`]);
+    kv.push([`Säcke pro Monat (à ${fK(bag)} kg)`, `≈ ${f1(sa.avg12.perMonth / bag)}`]);
+  }
+  if (sa.avgInterval != null) kv.push(['Ø Abstand zwischen Nachfüllungen', `${Math.round(sa.avgInterval)} Tage`]);
+  kv.push(['Ø Menge pro Nachfüllung', `${fN(sa.avgAmount)} kg`]);
+  const yr = new Date(TODAY).getUTCFullYear(), yy = sa.years.find(y => y.y === yr);
+  kv.push([`Nachgefüllt ${yr}`, yy ? `${fN(yy.kg)} kg (${yy.n}×)` : 'noch nichts']);
+  const basis = sa.avg12 ? `<p class="small muted">Basis für den Monatswert: ${sa.avg12.days >= 360 ? 'die letzten 12 Monate' : Math.round(sa.avg12.days) + ' Tage'} bis zur letzten Nachfüllung.</p>` : '';
+  const kpi = `<section class="card"><h2>Kennzahlen</h2><dl class="kv">${kv.map(r => `<div><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>${basis}</section>`;
+  const chart = `<section class="card"><h2>Letzte 12 Monate</h2>${sa.months.length ? '<p class="muted small">kg pro Monat. Tippe auf einen Balken für Details.</p><div class="chart" id="chartSalt12"></div>' : '<p class="muted small">Monatswerte erscheinen, sobald zwischen zwei Nachfüllungen ein ganzer Kalendermonat liegt.</p>'}</section>`;
+  return hero + saltNext(sa) + kpi + chart;
+}
+
+/* ---- Erfassen ---- */
+function saltForm(p, v){
+  v = v || {};
+  const lastE = sortedSalt().pop(), ph = lastE ? fK(lastE.bags) : '8';
+  const bagKg = v.bagKg != null ? v.bagKg : state.salt.settings.bagKg;
+  return `
+    <label class="field"><span>Datum</span><input type="date" id="${p}-date" value="${v.date || D.iso(TODAY)}"></label>
+    <div class="row2">
+      <label class="field"><span>Anzahl Säcke</span><input type="text" inputmode="decimal" id="${p}-bags" value="${v.bags != null ? v.bags : ''}" placeholder="z. B. ${ph}" autocomplete="off"></label>
+      <label class="field"><span>kg pro Sack</span><input type="text" inputmode="decimal" id="${p}-bagkg" value="${bagKg}" autocomplete="off"></label>
+    </div>
+    <div class="preview" id="${p}-prev" hidden></div>
+    <label class="field"><span>Notiz (optional)</span><input type="text" id="${p}-note" maxlength="120" value="${esc(v.note || '')}" placeholder="z. B. Garten viel bewässert" autocomplete="off"><small>Lose Ware: 1 Sack mit der Gesamtmenge eintragen.</small></label>`;
+}
+function saltInfo(date, kg, excludeId){
+  const t = D.parse(date), others = sortedSalt().filter(e => e.id !== excludeId);
+  let text = `Insgesamt ${fK(kg)} kg.`, warn = false;
+  if (others.find(e => e.date === date)) return {text:text + ' Für dieses Datum gibt es schon eine Nachfüllung. Prüfe das Datum.', warn:true, cls:'warn'};
+  const prior = others.filter(e => e.date < date).pop();
+  if (prior){
+    const days = Math.round((t - D.parse(prior.date)) / DAY);
+    text += ` Seit der Nachfüllung vom ${fD(D.parse(prior.date))}: ${days} Tage, ≈ ${fN(kg / days * 30.4375)} kg pro Monat.`;
+    if (days < 7){ warn = true; text += ' Das Intervall ist sehr kurz.'; }
+  } else if (others.length) text += ' Diese Nachfüllung liegt vor dem ersten Eintrag.';
+  if (t > TODAY){ warn = true; text += ' Das Datum liegt in der Zukunft.'; }
+  return {text, warn, cls:warn ? 'warn' : ''};
+}
+function saltPreview(p, excludeId){
+  const d = $('#' + p + '-date').value, b = num($('#' + p + '-bags').value), k = num($('#' + p + '-bagkg').value);
+  if (!d || b == null || k == null || b <= 0 || k <= 0) return null;
+  return saltInfo(d, r1(b * k), excludeId);
+}
+function wireSaltForm(p, excludeId, onChange){
+  const prev = $('#' + p + '-prev');
+  const upd = () => {
+    ui.confirmKey = null; if (onChange) onChange();
+    const info = saltPreview(p, excludeId);
+    if (!info){ prev.hidden = true; return; }
+    prev.hidden = false; prev.className = 'preview ' + info.cls; prev.textContent = info.text;
+  };
+  ['date', 'bags', 'bagkg'].forEach(k => $('#' + p + '-' + k).addEventListener('input', upd));
+  upd();
+}
+function collectSalt(p, excludeId){
+  const date = $('#' + p + '-date').value;
+  if (!date) return {err:'Bitte ein Datum wählen.'};
+  const bags = num($('#' + p + '-bags').value), bagKg = num($('#' + p + '-bagkg').value);
+  if (bags == null || bags <= 0) return {err:'Bitte die Anzahl Säcke eingeben.'};
+  if (bagKg == null || bagKg <= 0) return {err:'Bitte das Gewicht pro Sack in kg eingeben.'};
+  if (bags > 1000 || bagKg > 1000) return {err:'Bitte die Eingabe prüfen: Der Wert ist zu hoch.'};
+  const kg = r1(bags * bagKg), note = ($('#' + p + '-note').value || '').trim().slice(0, 120);
+  const info = saltInfo(date, kg, excludeId);
+  return {ev:{date, bags:r1(bags), bagKg:r1(bagKg), kg, note}, warn:info.warn ? info.text : null};
+}
+function renderSaltAdd(){
+  const lastE = SA.empty ? null : SA.lastEv;
+  return `<section class="card"><h2>Neue Nachfüllung</h2><div id="addForm">${saltForm('a')}</div>
+    <button class="btn oil" id="saltSave">Nachfüllung speichern</button></section>
+    ${lastE ? `<p class="muted small">Letzte Nachfüllung: ${saltEvText(lastE)} am ${fD(D.parse(lastE.date))}.</p>` : ''}`;
+}
+function onSaltAdd(){
+  const r = collectSalt('a', null);
+  if (r.err){ toast(r.err); return; }
+  const key = JSON.stringify(r.ev);
+  if (r.warn && ui.confirmKey !== key){ ui.confirmKey = key; $('#saltSave').textContent = 'Trotzdem speichern'; toast('Bitte den Hinweis prüfen und nochmals tippen.'); return; }
+  state.salt.settings.bagKg = r.ev.bagKg;
+  addSaltEvent(r.ev); ui.confirmKey = null;
+  toast('Nachfüllung gespeichert'); go('home');
+}
+
+/* ---- Verlauf ---- */
+function renderSaltLog(){
+  const sa = SA;
+  if (sa.empty) return saltEmpty();
+  const items = sortedSalt().reverse().map(e => {
+    const iv = sa.intervals.find(i => i.ids.includes(e.id));
+    let meta = '', cls = '';
+    if (iv){
+      meta = `${Math.round(iv.days)} Tage seit der vorherigen · ≈ ${fN(iv.perMonth)} kg pro Monat`;
+      if (iv.short){ cls = 'soft'; meta += ' · kurzes Intervall, ungenau'; }
+    } else meta = 'Startpunkt für die Berechnung';
+    return `<li data-id="${e.id}"><span class="ic fill">${ICON_SALT}</span><span class="t">${fD(D.parse(e.date))}</span><span class="v">${fK(e.kg)} kg</span>
+      <span class="m">${esc(saltBagsText(e))}</span><span class="m ${cls}">${esc(meta)}</span>${e.note ? `<span class="m">${esc(e.note)}</span>` : ''}</li>`;
+  }).join('');
+  return `<h2 style="margin:0 0 10px">Verlauf</h2><ul class="log">${items}</ul><p class="muted small">Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen.</p>`;
+}
+function openSaltSheet(id){
+  const e = state.salt.events.find(x => x.id === id); if (!e) return;
+  ui.sheet = id; ui.sheetMod = 'salt'; ui.delArm = false; ui.confirmKey = null;
+  const sh = $('#sheet');
+  sh.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="Nachfüllung bearbeiten"><h2>Nachfüllung ändern</h2>
+    <div id="xForm">${saltForm('x', e)}</div>
+    <button class="btn oil" id="xSave">Änderung speichern</button>
+    <div class="btns"><button class="btn ghost" id="xCancel">Abbrechen</button><button class="btn ghost" id="xDel">Löschen</button></div></div>`;
+  sh.classList.add('open');
+  wireSaltForm('x', id, () => { const b = $('#xSave'); if (b) b.textContent = 'Änderung speichern'; });
+}
+function onSaltSheetSave(){
+  const e = state.salt.events.find(x => x.id === ui.sheet); if (!e) return;
+  const r = collectSalt('x', e.id);
+  if (r.err){ toast(r.err); return; }
+  const key = JSON.stringify(r.ev);
+  if (r.warn && ui.confirmKey !== key){ ui.confirmKey = key; $('#xSave').textContent = 'Trotzdem speichern'; toast('Bitte den Hinweis prüfen und nochmals tippen.'); return; }
+  updateSaltEvent(e.id, r.ev); closeSheet(); toast('Änderung gespeichert'); render();
+}
+function onSaltSheetDelete(){
+  if (!ui.delArm){ ui.delArm = true; const b = $('#xDel'); b.textContent = 'Wirklich löschen'; b.classList.remove('ghost'); b.classList.add('bad'); return; }
+  deleteSaltEvent(ui.sheet); closeSheet(); toast('Eintrag gelöscht'); render();
+}
+
+/* ---- Analyse ---- */
+function saltYearsTable(sa){
+  const rows = sa.years.map(y => `<tr><td>${y.y}</td><td>${y.n}</td><td>${fK(y.bags)}</td><td>${fN(y.kg)}</td></tr>`).join('');
+  return `<div class="scroll"><table class="cyc"><thead><tr><th>Jahr</th><th>Nachfüllungen</th><th>Säcke</th><th>kg</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderSaltAnalysis(){
+  const sa = SA;
+  if (sa.empty) return saltEmpty();
+  const noM = '<p class="muted small">Monatswerte erscheinen, sobald zwischen zwei Nachfüllungen ein ganzer Kalendermonat liegt.</p>';
+  const maxVals = Math.max(...sa.byMonth.map(b => b.vals.length));
+  const seasonNote = maxVals < 2 ? 'Bisher gibt es pro Monat einen Wert. Ab dem zweiten Jahr zeigt der Durchschnitt den typischen Jahresverlauf.' : 'Durchschnitt pro Kalendermonat über alle Jahre, die Punkte sind die einzelnen Jahre.';
+  const monthCard = `<section class="card"><h2>Verbrauch pro Monat</h2>${sa.months.length ? '<p class="muted small">kg pro Kalendermonat, gleichmässig zwischen zwei Nachfüllungen verteilt (letzte 36 Monate).</p><div class="chart" id="chartSaltAll"></div>' : noM}</section>`;
+  const seasonCard = `<section class="card"><h2>Typischer Jahresverlauf</h2>${sa.months.length ? `<p class="muted small">${seasonNote}</p><div class="chart" id="chartSaltSeason"></div>
+    <div class="legend"><span><b class="band" style="background:var(--oil);opacity:.85"></b>Ø aller Jahre</span><span><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid var(--ink);display:inline-block"></i>einzelne Jahre</span></div>` : noM}</section>`;
+  const yearsCard = `<section class="card"><h2>Nachfüllungen pro Jahr</h2>${saltYearsTable(sa)}<p class="muted small" style="margin-top:8px">Gezählt nach Datum der Nachfüllung, nicht nach Verbrauch.</p></section>`;
+  const how = `<section class="card"><h3>So rechnet die App</h3><p class="small muted">Die App kennt nur die Nachfüllungen, nicht den Füllstand. Sie nimmt an, dass du jeweils auffüllst, was seit der letzten Nachfüllung verbraucht wurde. Diese Menge wird gleichmässig auf die Tage dazwischen verteilt und danach pro Kalendermonat addiert. Die erste Nachfüllung ist nur der Startpunkt. Gezählt werden nur ganze Monate zwischen der ersten und der letzten Nachfüllung. Je öfter du nachfüllst, desto genauer sind die Monatswerte. Kurzzeitige Spitzen, etwa durch starke Bewässerung, werden bei seltenen Nachfüllungen geglättet.</p></section>`;
+  return monthCard + seasonCard + yearsCard + how;
+}
+
+/* ---- Einstellungen ---- */
+function saltSettings(){
+  const S = state.settings, b = state.salt.settings.bagKg;
+  return `<section class="card" id="settings"><h3>Salz</h3>
+    <label class="field"><span>Standard-Sackgrösse (kg)</span><input data-s="bagKg" inputmode="decimal" value="${b}"><small>Wird beim Erfassen vorgeschlagen. Nach jeder Nachfüllung merkt sich die App die zuletzt verwendete Grösse.</small></label>
+    <label class="field"><span>Darstellung</span><select data-s="theme"><option value="auto" ${S.theme === 'auto' ? 'selected' : ''}>Automatisch</option><option value="light" ${S.theme === 'light' ? 'selected' : ''}>Hell</option><option value="dark" ${S.theme === 'dark' ? 'selected' : ''}>Dunkel</option></select></label>
+  </section>`;
+}
+
+/* ---- Diagramme ---- */
+function saltNiceStep(max){ for (const s of [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000]) if (max / s <= 5) return s; return 10000; }
+function saltBarTip(host, svg, m, W, n, fn){
+  const tip = document.createElement('div'); tip.className = 'tip'; host.appendChild(tip);
+  const bw = (W - m.l - m.r) / n;
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), i = Math.floor((ev.clientX - r.left - m.l) / bw);
+    if (i < 0 || i >= n){ tip.style.display = 'none'; return; }
+    const html = fn(i); if (!html){ tip.style.display = 'none'; return; }
+    tip.innerHTML = html; tip.style.display = 'block';
+    const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, m.l + (i + .5) * bw - tw / 2)) + 'px'; tip.style.top = '0px';
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+}
+function drawSaltBars(sel, months){
+  const host = $(sel); if (!host) return;
+  if (!months.length){ host.innerHTML = ''; return; }
+  const W = Math.max(280, host.clientWidth), H = 214, n = months.length, m = {l:38, r:6, t:16, b:40}, base = H - m.b;
+  const max = Math.max(...months.map(x => x.kg), 1), step = saltNiceStep(max), ymax = Math.ceil(max * 1.06 / step) * step;
+  const bw = (W - m.l - m.r) / n, Y = v => m.t + (1 - v / ymax) * (H - m.t - m.b), lblStep = n <= 12 ? 1 : n <= 24 ? 2 : 3;
+  let g = '';
+  for (let v = 0; v <= ymax + 0.01; v += step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
+  months.forEach((x, i) => {
+    const bx = m.l + i * bw, w = Math.max(3, bw * 0.68), xx = bx + (bw - w) / 2, cx = bx + bw / 2;
+    g += `<rect x="${xx.toFixed(1)}" y="${Y(x.kg).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, base - Y(x.kg)).toFixed(1)}" rx="${Math.min(3, w / 2).toFixed(1)}" fill="var(--oil)" opacity=".85"/>`;
+    if (n <= 12 && bw >= 24) g += `<text x="${cx.toFixed(1)}" y="${(Y(x.kg) - 4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink)">${Math.round(x.kg)}</text>`;
+    if (x.m % lblStep === 0) g += `<text x="${cx.toFixed(1)}" y="${base + 13}" text-anchor="middle" font-size="10" fill="var(--muted)">${W < 340 && n <= 12 ? MON[x.m].slice(0, 1) : MON[x.m]}</text>`;
+    const nextJan = months.findIndex((z, j) => j > i && z.m === 0);
+    if (x.m === 0 || (i === 0 && (nextJan < 0 || nextJan - i >= 3))) g += `<text x="${cx.toFixed(1)}" y="${base + 27}" text-anchor="middle" font-size="10" font-weight="600" fill="var(--muted)">${x.y}</text>`;
+  });
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Salzverbrauch pro Monat in Kilogramm">${g}</svg>`;
+  saltBarTip(host, host.querySelector('svg'), m, W, n, i => { const x = months[i]; return `${MON[x.m]} ${x.y}<br><b>${fN(x.kg)} kg</b> · ≈ ${f1(x.kg / state.salt.settings.bagKg)} Säcke`; });
+}
+function drawSaltSeason(){
+  const host = $('#chartSaltSeason'); if (!host) return;
+  const bm = SA.byMonth, all = [].concat(...bm.map(b => b.vals.map(v => v.kg)));
+  if (!all.length){ host.innerHTML = ''; return; }
+  const W = Math.max(280, host.clientWidth), H = 214, m = {l:38, r:6, t:18, b:26}, base = H - m.b;
+  const max = Math.max(...all), step = saltNiceStep(max), ymax = Math.ceil(max * 1.1 / step) * step;
+  const bw = (W - m.l - m.r) / 12, Y = v => m.t + (1 - v / ymax) * (H - m.t - m.b);
+  let g = '';
+  for (let v = 0; v <= ymax + 0.01; v += step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
+  bm.forEach((b, i) => {
+    const bx = m.l + i * bw, w = Math.max(4, bw * 0.68), xx = bx + (bw - w) / 2, cx = bx + bw / 2;
+    g += `<text x="${cx.toFixed(1)}" y="${base + 14}" text-anchor="middle" font-size="10" fill="var(--muted)">${W < 340 ? MON[i].slice(0, 1) : MON[i]}</text>`;
+    if (b.avg == null) return;
+    g += `<rect x="${xx.toFixed(1)}" y="${Y(b.avg).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, base - Y(b.avg)).toFixed(1)}" rx="3" fill="var(--oil)" opacity=".8"/>`;
+    b.vals.forEach(v => { g += `<circle cx="${cx.toFixed(1)}" cy="${Y(v.kg).toFixed(1)}" r="3.2" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+    g += `<text x="${cx.toFixed(1)}" y="${(Y(Math.max(b.avg, b.max)) - 7).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink)">${Math.round(b.avg)}</text>`;
+  });
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Durchschnittlicher Salzverbrauch je Kalendermonat">${g}</svg>`;
+  saltBarTip(host, host.querySelector('svg'), m, W, 12, i => {
+    const b = bm[i]; if (b.avg == null) return `${MON[i]}<br>Noch keine Daten`;
+    return `${MON[i]}: Ø <b>${fN(b.avg)} kg</b><br>` + b.vals.slice(-5).map(v => `${v.y}: ${fN(v.kg)} kg`).join('<br>');
+  });
+}
+function drawSaltCharts(){
+  if (!SA || SA.empty) return;
+  drawSaltBars('#chartSalt12', SA.months.slice(-12));
+  drawSaltBars('#chartSaltAll', SA.months.slice(-36));
+  drawSaltSeason();
 }
 /* ===== UI: Einstellungen, Ereignisse, Start ===== */
 function renderMore(){
   const S = state.settings, [em, ed] = S.seasonEnd.split('-').map(Number);
   const num_ = (k, label, hint, unit) => `<label class="field"><span>${label}</span><input data-s="${k}" inputmode="decimal" value="${S[k]}">${hint ? `<small>${hint}</small>` : ''}</label>`;
   const imp = ui.importData, impLast = imp && imp.events.length ? imp.events.map(e => e.date).sort().pop() : null;
-  const pending = imp ? `<div class="preview warn" style="margin-top:10px"><b>${imp.events.length} Einträge</b> im Backup${impLast ? ', letzter vom ' + fD(D.parse(impLast)) : ''}. Beim Übernehmen werden alle vorhandenen Einträge und Einstellungen ersetzt.</div>
+  const pending = imp ? `<div class="preview warn" style="margin-top:10px"><b>${imp.events.length} Einträge</b> im Backup${impLast ? ', letzter vom ' + fD(D.parse(impLast)) : ''}${imp.salt && Array.isArray(imp.salt.events) ? ', dazu ' + imp.salt.events.length + ' Salz-Nachfüllungen' : ''}. Beim Übernehmen werden alle vorhandenen Einträge und Einstellungen ersetzt.</div>
     <div class="btns"><button class="btn oil sm" data-act="import">Übernehmen</button><button class="btn ghost sm" data-act="importCancel">Abbrechen</button></div>` : '';
   const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
   const install = (!window.claude && !standalone) ? `<section class="card"><h3>Als App installieren</h3><p class="small muted">iPhone: In Safari auf das Teilen-Symbol tippen, dann «Zum Home-Bildschirm». Android: Browsermenü, dann «App installieren». Danach läuft die App im Vollbild und auch ohne Internet.</p>${deferredPrompt ? '<div class="btns"><button class="btn oil sm" data-act="install">Jetzt installieren</button></div>' : ''}</section>` : '';
   const where = storageMode === 'db' ? 'in deinem Claude-Konto und sind auf allen Geräten verfügbar' : (!window.claude ? 'auf diesem Gerät im Speicher der App. Sichere sie regelmässig, denn beim Löschen der App-Daten gehen sie verloren' : 'nur in diesem Browser. Öffne die App eingeloggt in Claude, damit sie im Konto gespeichert werden');
   return `<h2 style="margin:0 0 10px">Einstellungen</h2>
-  <section class="card" id="settings"><h3>Bestelltermin</h3>
+  ${ui.mod === 'salt' ? saltSettings() : `<section class="card" id="settings"><h3>Bestelltermin</h3>
     <div class="row2">${num_('thr', 'Schwelle (l)', 'Dieser Stand wird als Termin angezeigt.')}${num_('reserve', 'Reserve (l)', 'Soll am Ende bleiben.')}</div>
     <div class="row2">${num_('lead', 'Lieferfrist (Tage)', 'Vom Auftrag bis zur Lieferung.')}${num_('buffer', 'Puffer (Tage)', 'Zusätzliche Sicherheit.')}</div>
     <h3 style="margin-top:8px">Tank und Preis</h3>
@@ -911,11 +1262,11 @@ function renderMore(){
     <details><summary>Monatsprofil anpassen (l/Tag)</summary><div class="mgrid">${S.profile.map((v, i) => `<div><label>${MON[i]}</label><input data-p="${i}" inputmode="decimal" value="${v}"></div>`).join('')}</div>
     <div class="btns"><button class="btn ghost sm" data-act="resetProfile">Standardprofil laden</button></div></details>
     <label class="field"><span>Darstellung</span><select data-s="theme"><option value="auto" ${S.theme === 'auto' ? 'selected' : ''}>Automatisch</option><option value="light" ${S.theme === 'light' ? 'selected' : ''}>Hell</option><option value="dark" ${S.theme === 'dark' ? 'selected' : ''}>Dunkel</option></select></label>
-  </section>
+  </section>`}
   ${install}<section class="card"><h3>Backup</h3><p class="small muted">Deine Daten liegen ${where}. Beim Sichern «In Dateien sichern» wählen, z. B. iCloud Drive.</p>
     <div class="btns"><button class="btn ghost sm" data-act="download" style="position:relative">Backup sichern</button><button class="btn ghost sm" data-act="pick">Backup importieren</button></div>
     <input type="file" id="impFile" accept=".json,.gz,.json.gz" hidden>${pending || '<p class="hint" style="margin-top:6px">Der Import ersetzt alle vorhandenen Einträge.</p>'}</section>
-  <section class="card"><h3>Alle Daten löschen</h3><p class="small muted">Entfernt alle Einträge und Einstellungen.</p>
+  <section class="card"><h3>Alle Daten löschen</h3><p class="small muted">Entfernt alle Einträge und Einstellungen, Heizöl und Salz.</p>
     <div class="btns"><button class="btn ${ui.resetArm ? 'bad' : 'ghost'} sm" data-act="reset">${ui.resetArm ? 'Ja, alles löschen' : 'Daten löschen'}</button></div></section>
   <section class="card"><details class="chlog"><summary>Version ${APP_VERSION} · Änderungen</summary>
     ${CHANGELOG.map(c => `<h3>${c.version}</h3><ul>${c.changes.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</details></section>`;
@@ -924,7 +1275,7 @@ function renderMore(){
 /* ---- Sheet (Eintrag bearbeiten) ---- */
 function openSheet(id){
   const e = state.events.find(x => x.id === id); if (!e) return;
-  ui.sheet = id; ui.delArm = false; ui.confirmKey = null;
+  ui.sheet = id; ui.sheetMod = 'oil'; ui.delArm = false; ui.confirmKey = null;
   const sh = $('#sheet');
   sh.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="Eintrag bearbeiten"><h2>${e.type === 'read' ? 'Ölstand ändern' : 'Lieferung ändern'}</h2>
     <div id="xForm">${formHtml('x', e.type, e.type === 'read' ? {date:e.date, level:e.level} : {date:e.date, before:e.before, vol:e.vol, after:e.after})}</div>
@@ -934,19 +1285,25 @@ function openSheet(id){
   sh.classList.add('open');
   wireForm('x', e.type, id, () => { const b = $('#xSave'); if (b) b.textContent = 'Änderung speichern'; });
 }
-function closeSheet(){ ui.sheet = null; $('#sheet').classList.remove('open'); $('#sheet').innerHTML = ''; }
+function closeSheet(){ ui.sheet = null; ui.sheetMod = null; $('#sheet').classList.remove('open'); $('#sheet').innerHTML = ''; }
 
 /* ---- Rendering ---- */
 function render(){
   TODAY = D.today();
   A = analyze(state.events, state.settings, TODAY);
-  applyTheme();
+  SA = saltAnalyze(state.salt.events, TODAY);
+  applyTheme(); moduleChrome();
   $$('.bottom button').forEach(b => b.getAttribute('data-tab') === ui.tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   const main = $('#main');
-  main.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'add' ? renderAdd() : ui.tab === 'log' ? renderLog() : ui.tab === 'analysis' ? renderAnalysis() : renderMore();
-  if (ui.tab === 'add'){
-    const base = ui.addMode === 'read' ? 'Ölstand speichern' : 'Lieferung speichern';
-    wireForm('a', ui.addMode, null, () => { const b = $('#addSave'); if (b) b.textContent = base; });
+  if (ui.mod === 'salt'){
+    main.innerHTML = ui.tab === 'home' ? renderSaltHome() : ui.tab === 'add' ? renderSaltAdd() : ui.tab === 'log' ? renderSaltLog() : ui.tab === 'analysis' ? renderSaltAnalysis() : renderMore();
+    if (ui.tab === 'add') wireSaltForm('a', null, () => { const b = $('#saltSave'); if (b) b.textContent = 'Nachfüllung speichern'; });
+  } else {
+    main.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'add' ? renderAdd() : ui.tab === 'log' ? renderLog() : ui.tab === 'analysis' ? renderAnalysis() : renderMore();
+    if (ui.tab === 'add'){
+      const base = ui.addMode === 'read' ? 'Ölstand speichern' : 'Lieferung speichern';
+      wireForm('a', ui.addMode, null, () => { const b = $('#addSave'); if (b) b.textContent = base; });
+    }
   }
   renderChip(); renderBackupInfo();
   requestAnimationFrame(drawCharts);
@@ -963,6 +1320,7 @@ function onAddSave(){
   toast(ui.addMode === 'read' ? 'Ölstand gespeichert' : 'Lieferung gespeichert'); go('home');
 }
 function onSheetSave(){
+  if (ui.sheetMod === 'salt') return onSaltSheetSave();
   const e = state.events.find(x => x.id === ui.sheet); if (!e) return;
   const r = collect('x', e.type);
   if (r.err){ toast(r.err); return; }
@@ -972,6 +1330,7 @@ function onSheetSave(){
   updateEvent(e.id, r.ev); closeSheet(); ui.planVol = null; ui.planDate = null; toast('Änderung gespeichert'); render();
 }
 function onSheetDelete(){
+  if (ui.sheetMod === 'salt') return onSaltSheetDelete();
   if (!ui.delArm){ ui.delArm = true; const b = $('#xDel'); b.textContent = 'Wirklich löschen'; b.classList.remove('ghost'); b.classList.add('bad'); return; }
   deleteEvent(ui.sheet); closeSheet(); ui.planVol = null; ui.planDate = null; toast('Eintrag gelöscht'); render();
 }
@@ -979,6 +1338,7 @@ function onSetting(t){
   const S = state.settings, k = t.dataset.s;
   if (t.dataset.p != null){ const v = num(t.value); if (v != null && v >= 0) S.profile[+t.dataset.p] = v; }
   else if (['thr', 'reserve', 'lead', 'buffer', 'capacity', 'price'].includes(k)){ const v = num(t.value); if (v != null && v >= 0) S[k] = v; }
+  else if (k === 'bagKg'){ const v = num(t.value); if (v != null && v > 0 && v <= 1000) state.salt.settings.bagKg = v; }
   else if (k === 'kaltPct'){ const v = num(t.value); if (v != null && v >= 0 && v <= 100) S.kalt = 1 + v / 100; }
   else if (k === 'mildPct'){ const v = num(t.value); if (v != null && v >= 0 && v <= 60) S.mild = 1 - v / 100; }
   else if (k === 'kManual'){ const v = num(t.value); if (v != null && v > 0 && v < 5) S.kManual = v; }
@@ -992,7 +1352,7 @@ function onSetting(t){
 }
 async function onAct(act){
   if (act === 'download'){
-    const json = JSON.stringify({v:1, exportedAt:new Date().toISOString(), events:state.events, settings:state.settings});
+    const json = JSON.stringify({v:1, exportedAt:new Date().toISOString(), events:state.events, settings:state.settings, salt:state.salt});
     const stamp = D.iso(TODAY);
     // Wie Flugbuch: gzip-komprimiert, falls der Browser es kann (CompressionStream), sonst normales JSON
     let blob = null, fname = '';
@@ -1024,6 +1384,7 @@ async function onAct(act){
     const f = $('#impFile'); f.value = ''; f.click();
   } else if (act === 'import'){
     if (!ui.importData) return;
+    if (ui.importData.salt === undefined) ui.importData.salt = state.salt;
     state = normalize(ui.importData); saveLocal(); pushDb(); setBackup(false); ui.importData = null; ui.planVol = null; ui.planDate = null; toast('Backup importiert'); render();
   } else if (act === 'zoomReset'){
     ui.zoom = null; drawLevel();
@@ -1038,16 +1399,18 @@ async function onAct(act){
 /* ---- Ereignisse ---- */
 document.addEventListener('click', ev => {
   const t = ev.target.closest('button, li[data-id]'); if (!t) return;
+  if (t.dataset.mod) return setMod(t.dataset.mod);
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
   if (t.dataset.mode){ ui.addMode = t.dataset.mode; ui.confirmKey = null; return render(); }
   if (t.dataset.range){ ui.range = t.dataset.range; ui.zoom = null; $$('#rangeChips button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === ui.range)); return drawLevel(); }
   if (t.dataset.act) return onAct(t.dataset.act);
   if (t.id === 'addSave') return onAddSave();
+  if (t.id === 'saltSave') return onSaltAdd();
   if (t.id === 'xSave') return onSheetSave();
   if (t.id === 'xCancel') return closeSheet();
   if (t.id === 'xDel') return onSheetDelete();
-  if (t.matches('li[data-id]')) return openSheet(t.dataset.id);
+  if (t.matches('li[data-id]')) return ui.mod === 'salt' ? openSaltSheet(t.dataset.id) : openSheet(t.dataset.id);
 });
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
 $('#main').addEventListener('input', e => {

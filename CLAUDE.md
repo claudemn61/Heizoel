@@ -1,7 +1,8 @@
 # Heizöl — Projektkontext für Claude Code
 
 Heizöltank-Verwaltung als PWA von claudemn61: Füllstand, Verbrauch,
-Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
+Bestelltermin und Bestellmenge. Zweiter Bereich **Regeneriersalz** (Wasseranlage):
+Nachfüllungen und Verbrauch pro Monat (Umschalter «Heizöl | Salz» oben). Gleicher Autor wie die Schwester-Projekte
 `Tauchbuch` und `Flugbuch`.
 
 ## Sprache & Stil
@@ -22,7 +23,7 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
 - Deployment: GitHub Pages direkt vom `main`-Branch, Ordner `/ (root)` (kein
   GitHub-Actions-Workflow — Push auf `main` deployt automatisch).
 - Persistenz: `localStorage`, Key `heizoel-tracker-v1`, Zustand
-  `{ v:1, events:[...], settings:{...} }`. Läuft die App als Claude-Artifact,
+  `{ v:1, events:[...], settings:{...}, salt:{ events:[...], settings:{bagKg} } }`. Läuft die App als Claude-Artifact,
   wird zusätzlich über `claude.use('db')` ins Konto synchronisiert
   (`initDb`/`pushDb`, Dokument `data/users/<id>/heizoel`).
 - Ereignisse: `type:'read'` (`date`, `level`) und `type:'fill'` (`date`,
@@ -30,12 +31,20 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
   Korrektur, nur im Bearbeiten-Fenster erfassbar, im Verlauf angezeigt). `normalize()` ist die einzige Stelle, die
   geladene/importierte Daten bereinigt — neue Felder dort ergänzen, sonst gehen
   sie beim Laden/Import verloren.
+- Salz: `salt.events` = `{id, date, bags, bagKg, kg, note}` (nur Nachfüllungen,
+  kein Füllstand). `normalizeSalt()` wird von `normalize()` aufgerufen. Kernlogik
+  `saltAnalyze()` (Block 1): jede Nachfüllung ersetzt den Verbrauch seit der
+  vorherigen, gleichmässig auf die Tage verteilt, Monatswerte nur für ganze
+  Kalendermonate. Der Bereich wird über `ui.mod` (`oil`/`salt`, gemerkt in
+  `heizoel-tracker-mod`) gewählt; Salz nutzt dieselben Tabs, dasselbe
+  Bearbeiten-Fenster (`ui.sheetMod`) und färbt sich über `body.mod-salt` blau.
 - Backup (analog Flugbuch), Tab «Mehr»: «Backup sichern» (`onAct('download')`)
-  schreibt `{v, exportedAt, events, settings}` gzip-komprimiert als
+  schreibt `{v, exportedAt, events, settings, salt}` gzip-komprimiert als
   `heizoel-backup-JJJJ-MM-TT.json.gz`, bevorzugt über das Teilen-Menü (iOS «In
   Dateien sichern»), sonst als Download. «Backup importieren» (`onFile`) liest
   `.json.gz` und unkomprimiertes `.json` (Erkennung über gzip-Magic-Bytes) und
-  ersetzt die Daten erst nach «Übernehmen». Neue Einstellungen gehören in
+  ersetzt die Daten erst nach «Übernehmen» (fehlt `salt` im Backup, bleiben die
+  vorhandenen Salz-Daten erhalten). Neue Einstellungen gehören in
   `DEFAULTS`, damit sie automatisch im Backup landen.
 - Backup-Status (nicht Teil des Backups): `heizoel-lastBackupAt` (Anzeige im
   Kopf) und `heizoel-backupDirty` (Punkt an «Mehr» und «Backup sichern»).
@@ -47,7 +56,7 @@ Bestelltermin und Bestellmenge. Gleicher Autor wie die Schwester-Projekte
 
 | Script-Block | Inhalt |
 |---|---|
-| 1. Kernlogik (ohne DOM, testbar) | `PRIOR`, `DEFAULTS`, `buildPoints/Intervals/Segments`, `fitK`, `simulate`, `analyze` |
+| 1. Kernlogik (ohne DOM, testbar) | `PRIOR`, `DEFAULTS`, `buildPoints/Intervals/Segments`, `fitK`, `simulate`, `analyze`, `saltAnalyze` |
 | 2. UI (IIFE) | Speicher, `render()`, Tabs `home`/`add`/`log`/`analysis`/`more`, SVG-Diagramme, Sheet, Aktionen |
 | 3. Start | Service-Worker-Registrierung, `navigator.storage.persist()` |
 
