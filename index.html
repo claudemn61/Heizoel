@@ -1159,7 +1159,7 @@ function renderSaltAnalysis(){
   const monthCard = `<section class="card"><h2>Verbrauch pro Monat</h2>${sa.months.length ? '<p class="muted small">kg pro Kalendermonat, gleichmässig zwischen zwei Nachfüllungen verteilt (letzte 36 Monate).</p><div class="chart" id="chartSaltAll"></div>' : noM}</section>`;
   const seasonCard = `<section class="card"><h2>Typischer Jahresverlauf</h2>${sa.months.length ? `<p class="muted small">${seasonNote}</p><div class="chart" id="chartSaltSeason"></div>
     <div class="legend"><span><b class="band" style="background:var(--oil);opacity:.85"></b>Ø aller Jahre</span><span><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid var(--ink);display:inline-block"></i>einzelne Jahre</span></div>` : noM}</section>`;
-  const ivCard = `<section class="card"><h2>Abstände zwischen Nachfüllungen</h2>${sa.intervals.length ? `<p class="muted small">Tage seit der vorherigen Nachfüllung, Balken am Tag der Nachfüllung auf einer Zeitachse. Die gestrichelte Linie ist der Durchschnitt (Ø ${Math.round(sa.avgInterval)} Tage). Tippe auf einen Balken für Details.</p><div class="chart" id="chartSaltIv"></div>` : '<p class="muted small">Ab der zweiten Nachfüllung erscheinen hier die Abstände.</p>'}</section>`;
+  const ivCard = `<section class="card"><h2>Salzstand zwischen den Nachfüllungen</h2>${sa.intervals.length ? `<p class="muted small">Jede Nachfüllung füllt auf «voll» (Kreis). Danach sinkt der Stand bis zur nächsten Nachfüllung; die Tiefe entspricht der nachgefüllten Menge in kg. Ø Abstand ${Math.round(sa.avgInterval)} Tage. Die gestrichelte Linie schätzt den Stand seit der letzten Nachfüllung. Tippe auf einen Tiefpunkt für Details.</p><div class="chart" id="chartSaltIv"></div>` : '<p class="muted small">Ab der zweiten Nachfüllung erscheint hier der Verlauf.</p>'}</section>`;
   const yearsCard = `<section class="card"><h2>Nachfüllungen pro Jahr</h2>${saltYearsTable(sa)}<p class="muted small" style="margin-top:8px">Gezählt nach Datum der Nachfüllung, nicht nach Verbrauch.</p></section>`;
   const how = `<section class="card"><h3>So rechnet die App</h3><p class="small muted">Die App kennt nur die Nachfüllungen, nicht den Füllstand. Sie nimmt an, dass du jeweils auffüllst, was seit der letzten Nachfüllung verbraucht wurde. Diese Menge wird gleichmässig auf die Tage dazwischen verteilt und danach pro Kalendermonat addiert. Die erste Nachfüllung ist nur der Startpunkt. Gezählt werden nur ganze Monate zwischen der ersten und der letzten Nachfüllung. Je öfter du nachfüllst, desto genauer sind die Monatswerte. Kurzzeitige Spitzen, etwa durch starke Bewässerung, werden bei seltenen Nachfüllungen geglättet.</p></section>`;
   return ivCard + monthCard + seasonCard + yearsCard + how;
@@ -1233,32 +1233,35 @@ function drawSaltSeason(){
 }
 function drawSaltIntervals(){
   const host = $('#chartSaltIv'); if (!host) return;
-  const ivs = SA.intervals, n = ivs.length;
-  if (!n){ host.innerHTML = ''; return; }
-  const W = Math.max(280, host.clientWidth), H = 214, m = {l:38, r:12, t:16, b:26}, base = H - m.b;
-  const max = Math.max(...ivs.map(x => x.days), 1), step = saltNiceStep(max), ymax = Math.ceil(max * 1.1 / step) * step;
-  const x0 = ivs[0].t2 - 40 * DAY, x1 = ivs[n - 1].t2 + 40 * DAY, pw = W - m.l - m.r;
-  const X = t => m.l + (t - x0) / (x1 - x0) * pw, Y = v => m.t + (1 - v / ymax) * (H - m.t - m.b);
-  const avg = ivs.reduce((a, x) => a + x.days, 0) / n;
-  const bw = Math.max(3, Math.min(14, pw / (x1 - x0) * DAY * 12));
+  const rows = SA.rows, n = rows.length;
+  if (n < 2){ host.innerHTML = ''; return; }
+  const W = Math.max(280, host.clientWidth), H = 230, m = {l:44, r:12, t:16, b:26}, base = H - m.b;
+  const ivs = SA.intervals, max = Math.max(...ivs.map(x => x.kg), 1), step = saltNiceStep(max), ymin = -Math.ceil(max * 1.08 / step) * step;
+  const perDay = SA.avg12 ? SA.avg12.perMonth / 30.4375 : null, last = SA.last;
+  const tEnd = Math.max(last.t, TODAY), x0 = rows[0].t - 20 * DAY, x1 = tEnd + 30 * DAY, pw = W - m.l - m.r;
+  const X = t => m.l + (t - x0) / (x1 - x0) * pw, Y = v => m.t + (v / ymin) * (H - m.t - m.b);
   let g = '';
-  for (let v = 0; v <= ymax + 0.01; v += step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fN(v)}</text>`;
-  const stepM = [1, 3, 6, 12].find(k => k * 30.4 * pw / (x1 - x0) * DAY >= 42) || 12, ticks = [];
+  for (let v = 0; v >= ymin - 0.01; v -= step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v === 0 ? 'voll' : fN(v)}</text>`;
+  const stepM = [1, 3, 6, 12].find(k => k * 30.4 * pw / (x1 - x0) * DAY >= 42) || 12;
   { const d0 = new Date(x0); let yy = d0.getUTCFullYear(), mm = d0.getUTCMonth() + 1;
-    for (let t = Date.UTC(yy, mm, 1); t <= x1; mm++, t = Date.UTC(yy, mm, 1)){ const dd = new Date(t), mo = dd.getUTCMonth(); if (mo % stepM === 0) ticks.push({t, label:MON[mo] + ' ' + String(dd.getUTCFullYear()).slice(2)}); } }
-  for (const t of ticks) g += `<line x1="${X(t.t)}" x2="${X(t.t)}" y1="${m.t}" y2="${base}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t.t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${t.label}</text>`;
-  g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(avg)}" y2="${Y(avg)}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="5 3"/>`;
-  ivs.forEach(x => {
-    const cx = X(x.t2);
-    g += `<rect x="${(cx - bw / 2).toFixed(1)}" y="${Y(x.days).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, base - Y(x.days)).toFixed(1)}" rx="${Math.min(3, bw / 2).toFixed(1)}" fill="var(--oil)" opacity="${x.short ? .45 : .85}"/><text x="${cx.toFixed(1)}" y="${(Y(x.days) - 4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink)">${Math.round(x.days)}</text>`;
-  });
-  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Abstände zwischen den Nachfüllungen in Tagen auf der Zeitachse">${g}</svg>`;
+    for (let t = Date.UTC(yy, mm, 1); t <= x1; mm++, t = Date.UTC(yy, mm, 1)){ const dd = new Date(t), mo = dd.getUTCMonth(); if (mo % stepM === 0) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${m.t}" y2="${base}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${X(t)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${MON[mo]} ${String(dd.getUTCFullYear()).slice(2)}</text>`; } }
+  let d = `M${X(rows[0].t).toFixed(1)},${Y(0).toFixed(1)}`;
+  ivs.forEach(x => { d += `L${X(x.t2).toFixed(1)},${Y(-x.kg).toFixed(1)}L${X(x.t2).toFixed(1)},${Y(0).toFixed(1)}`; });
+  g += `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+  if (perDay && TODAY > last.t){
+    const kgNow = Math.min(-ymin, perDay * (TODAY - last.t) / DAY);
+    g += `<path d="M${X(last.t).toFixed(1)},${Y(0).toFixed(1)}L${X(TODAY).toFixed(1)},${Y(-kgNow).toFixed(1)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  }
+  rows.forEach(r => { g += `<circle cx="${X(r.t).toFixed(1)}" cy="${Y(0).toFixed(1)}" r="4" fill="var(--surface)" stroke="var(--oil)" stroke-width="2.4"/>`; });
+  ivs.forEach(x => { g += `<circle cx="${X(x.t2).toFixed(1)}" cy="${Y(-x.kg).toFixed(1)}" r="2.6" fill="var(--ink)"/>`; });
+  if (TODAY >= x0 && TODAY <= x1) g += `<line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${m.t}" y2="${base}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/>`;
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Salzstand zwischen den Nachfüllungen auf der Zeitachse">${g}</svg>`;
   const svg = host.querySelector('svg'), tip = document.createElement('div'); tip.className = 'tip'; host.appendChild(tip);
   const move = ev => {
     const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
-    let best = null, bd = 1e9; ivs.forEach(x => { const d = Math.abs(X(x.t2) - px); if (d < bd){ bd = d; best = x; } });
-    if (!best || bd > 24){ tip.style.display = 'none'; return; }
-    tip.innerHTML = `${fD(best.t1)} bis ${fD(best.t2)}<br><b>${Math.round(best.days)} Tage</b> · ${fN(best.kg)} kg`; tip.style.display = 'block';
+    let best = null, bd = 1e9; ivs.forEach(x => { const dd = Math.abs(X(x.t2) - px); if (dd < bd){ bd = dd; best = x; } });
+    if (!best || bd > 26){ tip.style.display = 'none'; return; }
+    tip.innerHTML = `${fD(best.t1)} bis ${fD(best.t2)}<br><b>${fN(best.kg)} kg</b> in ${Math.round(best.days)} Tagen`; tip.style.display = 'block';
     const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, X(best.t2) - tw / 2)) + 'px'; tip.style.top = '0px';
   };
   svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
